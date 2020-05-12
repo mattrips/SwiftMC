@@ -33,13 +33,13 @@ public final class ClientHandler: ChannelInboundHandler {
     // Initializer
     init(channelWrapper: ChannelWrapper) {
         self.channelWrapper = channelWrapper
+        self.channelWrapper.handler = self
         self.handler = InitialHandler()
     }
     
     // This method handles new connections
     public func channelActive(context: ChannelHandlerContext) {
-        // Logging
-        print("[+] Client connecting: \(context.channel.remoteAddress?.description ?? "-")")
+        // Give channel to handler
         handler?.connected(channel: channelWrapper)
     }
     
@@ -58,11 +58,9 @@ public final class ClientHandler: ChannelInboundHandler {
     
     // This method is called if the socket is closed in a clean way.
     public func channelInactive(context: ChannelHandlerContext) {
-        print("[+] Client disconnected.")
         if let handler = handler {
             // Mark as closed
-            channelWrapper.closing = true
-            channelWrapper.closed = true
+            channelWrapper.close()
             
             // And close connection
             handler.disconnected(channel: channelWrapper)
@@ -71,8 +69,13 @@ public final class ClientHandler: ChannelInboundHandler {
     
     // Called if an error happens. Log and close the socket.
     public func errorCaught(context: ChannelHandlerContext, error: Error) {
-        print("[!] ERROR: \(error)")
-        context.close(promise: nil)
+        if let handler = handler {
+            // Mark as closed
+            channelWrapper.close()
+            
+            // And close connection
+            handler.disconnected(channel: channelWrapper)
+        }
     }
     
 }

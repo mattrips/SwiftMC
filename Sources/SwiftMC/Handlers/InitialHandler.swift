@@ -24,6 +24,10 @@ class InitialHandler: PacketHandler {
     
     var channel: ChannelWrapper?
     
+    func bindChannel(channel: ChannelWrapper?) {
+        self.channel = channel
+    }
+    
     func connected(channel: ChannelWrapper) {
         self.channel = channel
     }
@@ -47,6 +51,9 @@ class InitialHandler: PacketHandler {
         if let statusRequest = wrapper.packet as? StatusRequest {
             self.handle(statusRequest: statusRequest)
         }
+        if let loginRequest = wrapper.packet as? LoginRequest {
+            self.handle(loginRequest: loginRequest)
+        }
     }
     
     func handle(pingPacket: PingPacket) {
@@ -58,59 +65,86 @@ class InitialHandler: PacketHandler {
     }
     
     func handle(handshake: Handshake) {
-        // Save
-        channel?.setVersion(version: handshake.protocolVersion)
-        
-        // Remove FML from host
-        if handshake.host.contains("\0") {
-            let split = handshake.host.split(separator: "\0", maxSplits: 2, omittingEmptySubsequences: true)
-            handshake.host = String(split[0])
-        }
-        
-        // Remove . at the end (dns record)
-        if handshake.host.count > 0 && handshake.host.last == "." {
-            let _ = handshake.host.removeLast()
-        }
-        
-        // Check request protocol
-        switch handshake.requestedProtocol {
+        if let channel = channel {
+            // Save
+            channel.setVersion(version: handshake.protocolVersion)
             
-        case 1:
-            // Ping
-            channel?.setProtocol(prot: .STATUS)
-        case 2:
-            // Login
-            disconnect(reason: "Not ready!")
-        default:
-            return
+            // Remove FML from host
+            if handshake.host.contains("\0") {
+                let split = handshake.host.split(separator: "\0", maxSplits: 2, omittingEmptySubsequences: true)
+                handshake.host = String(split[0])
+            }
             
+            // Remove . at the end (dns record)
+            if handshake.host.count > 0 && handshake.host.last == "." {
+                let _ = handshake.host.removeLast()
+            }
+            
+            // Check request protocol
+            switch handshake.requestedProtocol {
+                
+            case 1:
+                // Ping
+                channel.setProtocol(prot: .STATUS)
+            case 2:
+                // Login
+                channel.setProtocol(prot: .LOGIN)
+                
+                // Check server/client version
+                if !ProtocolConstants.supported_versions_ids.contains(handshake.protocolVersion) {
+                    if handshake.protocolVersion > channel.server.configuration.protocolVersion {
+                        disconnect(reason: "Outdated server!")
+                    } else {
+                        disconnect(reason: "Outdated client!")
+                    }
+                }
+            default:
+                return
+                
+            }
         }
     }
     
     func handle(statusRequest: StatusRequest) {
-        // Create response
-        let response: [String: Any] = [
-            "version": [
-                "name": "1.12.2",
-                "protocol": 340
-            ],
-            "players": [
-                "max": 42,
-                "online": 0,
-                "sample": []
-            ],
-            "description": [
-                "text": "SwiftMC Server"
-            ]
-        ]
-        
         // Send packet
-        if let json = try? JSONSerialization.data(withJSONObject: response, options: []), let string = String(bytes: json, encoding: .utf8) {
-            channel?.send(packet: StatusResponse(response: string))
+        if let channel = channel, let json = try? JSONSerialization.data(withJSONObject: channel.server.getServerInfo(preferedProtocol: channel.decoder.protocolVersion), options: []), let string = String(bytes: json, encoding: .utf8) {
+            channel.send(packet: StatusResponse(response: string))
         }
     }
     
+    func handle(loginRequest: LoginRequest) {
+        if let channel = channel {
+            // Check number of slots + not already connected
+            let connected = channel.server.players.count
+            let slots = channel.server.configuration.slots
+            if connected >= slots {
+                // To many people
+                disconnect(reason: "Too many people are connected, try again later!")
+                return
+            }
+            
+            // Check for online mode
+            // If yes, send encryption packet
+            // Else, finish
+            
+
+            // Get UUID
+            // TODO: Generate from name instead of random
+            let uuid = UUID()
+            finish(success: LoginSuccess(uuid: uuid.uuidString.lowercased(), username: loginRequest.data))
+        }
+    }
+    
+    func finish(success: LoginSuccess) {
+        // Send success packet and switch to game protocol
+        channel?.server.log("Authenticating player \(success.username) (\(success.uuid))...")
+        channel?.send(packet: success)
+        channel?.setProtocol(prot: .GAME)
+        channel?.setHandler(handler: GameHandler())
+    }
+    
     func disconnect(reason: String) {
+        channel?.server.log("Client disconnected: \(reason)")
         if let json = try? JSONSerialization.data(withJSONObject: ["text": reason], options: []), let string = String(bytes: json, encoding: .utf8) {
             // Send kick packet
             channel?.close(packet: Kick(message: string))

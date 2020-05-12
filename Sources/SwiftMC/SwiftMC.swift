@@ -24,20 +24,30 @@ import NIO
 public class SwiftMC {
     
     // Variables
-    let protocolVersion: Int32
-    let port: Int
+    let configuration: Configuration
     let eventLoopGroup: EventLoopGroup
     var serverChannel: Channel?
+    var clients: [ChannelWrapper]
+    var players: [ChannelWrapper] {
+        get {
+            return clients.filter { client in
+                client.login != nil
+            }
+        }
+    }
 
     // Initializer
-    public init(protocolVersion: Int32, port: Int) {
-        self.protocolVersion = protocolVersion
-        self.port = port
-        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+    public init(configuration: Configuration) {
+        self.configuration = configuration
+        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        self.clients = []
     }
     
     // Start server
     public func start() {
+        // Start
+        log("Starting server...")
+        
         // Listen and wait
         listenAndWait()
     }
@@ -48,7 +58,7 @@ public class SwiftMC {
         do {
             try serverChannel?.closeFuture.wait()
         } catch {
-            print("[!] ERROR: Failed to wait on server: \(error)")
+            log("ERROR: Failed to wait on server: \(error)")
         }
     }
 
@@ -59,7 +69,7 @@ public class SwiftMC {
         do {
             // Get address
             var addr = sockaddr_in()
-            addr.sin_port = in_port_t(port).bigEndian
+            addr.sin_port = in_port_t(configuration.port).bigEndian
             let address = SocketAddress(addr, host: "*")
             
             // Create server channel
@@ -67,16 +77,16 @@ public class SwiftMC {
             
             // Check that everything is running
             if let addr = serverChannel?.localAddress {
-                print("[+] Server running on: \(addr)")
+                log("Server running on port \(addr.port ?? 25565)")
             } else {
-                print("[!] ERROR: server reported no local address?")
+                log("ERROR: server reported no local address?")
             }
         } catch let error as NIO.IOError {
             // Error starting server
-            print("[!] ERROR: failed to start server, errno: \(error.errnoCode)\n\(error.localizedDescription)")
+            log("ERROR: failed to start server, errno: \(error.errnoCode)\n\(error.localizedDescription)")
         } catch {
             // Error starting server
-            print("[!] ERROR: failed to start server: \(type(of: error))\(error)")
+            log("ERROR: failed to start server: \(type(of: error))\(error)")
         }
     }
     
@@ -90,9 +100,12 @@ public class SwiftMC {
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
                 // Create objects
-                let decoder = MinecraftDecoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.protocolVersion)
-                let encoder = MinecraftEncoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.protocolVersion)
-                let wrapper = ChannelWrapper(channel: channel, decoder: decoder, encoder: encoder)
+                let decoder = MinecraftDecoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.configuration.protocolVersion)
+                let encoder = MinecraftEncoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.configuration.protocolVersion)
+                let wrapper = ChannelWrapper(server: self, channel: channel, decoder: decoder, encoder: encoder)
+                
+                // Add client to list
+                self.clients.append(wrapper)
                 
                 // Add then to pipeline
                 return channel.pipeline.addHandlers([
@@ -106,6 +119,32 @@ public class SwiftMC {
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
             .childChannelOption(reuseAddrOpt, value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
+    }
+    
+    func log(_ string: String) {
+        // Allow custom log channels (like remote access)
+        print("[\(Date())] \(string)")
+    }
+    
+    func getServerInfo(preferedProtocol: Int32) -> [String: Any] {
+        // Get players
+        let players = self.players
+        
+        // Return the payload
+        return [
+            "version": [
+                "name": "SwiftMC *",
+                "protocol": ProtocolConstants.supported_versions_ids.contains(preferedProtocol) ? preferedProtocol : configuration.protocolVersion
+            ],
+            "players": [
+                "max": configuration.slots,
+                "online": players.count,
+                "sample": []
+            ],
+            "description": [
+                "text": "SwiftMC: \(configuration.name)"
+            ]
+        ]
     }
     
 }

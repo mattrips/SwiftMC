@@ -36,7 +36,7 @@ class LegacyPing: Packet {
         // ???
     }
     
-    func writePacket(to buffer: inout ByteBuffer) {
+    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         // ???
     }
     

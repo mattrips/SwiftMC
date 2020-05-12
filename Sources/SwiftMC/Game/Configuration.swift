@@ -18,26 +18,17 @@
 */
 
 import Foundation
-import NIO
 
-class PingPacket: Packet {
+public class Configuration {
     
-    var time: Int64
+    public let protocolVersion: Int32
+    public let port: Int
+    public var name: String = "My server"
+    public var slots: Int = 42
     
-    required init() {
-        time = -1
-    }
-    
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        self.time = buffer.readInteger(as: Int64.self) ?? self.time
-    }
-    
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        buffer.writeInteger(time)
-    }
-    
-    func toString() -> String {
-        return "PingPacket(time: \(time))"
+    public init(protocolVersion: Int32, port: Int) {
+        self.protocolVersion = protocolVersion
+        self.port = port
     }
     
 }

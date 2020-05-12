@@ -41,7 +41,7 @@ class Handshake: Packet {
         self.requestedProtocol = buffer.readVarInt() ?? self.requestedProtocol
     }
     
-    func writePacket(to buffer: inout ByteBuffer) {
+    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarInt(value: protocolVersion)
         buffer.writeVarString(string: host)
         buffer.writeInteger(port)

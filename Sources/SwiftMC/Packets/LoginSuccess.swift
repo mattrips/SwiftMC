@@ -20,24 +20,33 @@
 import Foundation
 import NIO
 
-class PingPacket: Packet {
+class LoginSuccess: Packet {
     
-    var time: Int64
+    var uuid: String
+    var username: String
     
     required init() {
-        time = -1
+        uuid = ""
+        username = ""
+    }
+    
+    init(uuid: String, username: String) {
+        self.uuid = uuid
+        self.username = username
     }
     
     func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        self.time = buffer.readInteger(as: Int64.self) ?? self.time
+        uuid = buffer.readVarString() ?? uuid
+        username = buffer.readVarString() ?? username
     }
     
     func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        buffer.writeInteger(time)
+        buffer.writeVarString(string: uuid)
+        buffer.writeVarString(string: username)
     }
     
     func toString() -> String {
-        return "PingPacket(time: \(time))"
+        return "LoginSuccess(uuid: \(uuid), username: \(username))"
     }
     
 }

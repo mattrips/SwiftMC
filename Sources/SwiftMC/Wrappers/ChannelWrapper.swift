@@ -23,13 +23,17 @@ import NIO
 public class ChannelWrapper {
     
     // Vars
+    var server: SwiftMC
     var channel: Channel
+    var handler: ClientHandler?
     var decoder: MinecraftDecoder
     var encoder: MinecraftEncoder
+    var login: LoginSuccess?
     var closed: Bool = false
     var closing: Bool = false
     
-    init(channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder) {
+    init(server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder) {
+        self.server = server
         self.channel = channel
         self.decoder = decoder
         self.encoder = encoder
@@ -45,8 +49,21 @@ public class ChannelWrapper {
         encoder.protocolVersion = version
     }
     
+    func setHandler(handler: PacketHandler) {
+        self.handler?.handler?.bindChannel(channel: nil)
+        self.handler?.handler = handler
+        self.handler?.handler?.bindChannel(channel: self)
+    }
+    
     func send(packet: Packet) {
         if !closed {
+            // Check packet type
+            if let login = packet as? LoginSuccess {
+                // Save user login
+                self.login = login
+            }
+            
+            // Send packet
             channel.writeAndFlush(packet, promise: nil)
         }
     }
@@ -56,6 +73,11 @@ public class ChannelWrapper {
             // Mark as closed
             closing = true
             closed = true
+            
+            // Remove from server clients
+            server.clients.removeAll(where: { client in
+                client.channel.localAddress == channel.localAddress
+            })
             
             // Send close packet if there is one
             if let packet = packet {

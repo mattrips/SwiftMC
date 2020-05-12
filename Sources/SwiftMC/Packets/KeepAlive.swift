@@ -20,24 +20,30 @@
 import Foundation
 import NIO
 
-class PingPacket: Packet {
+class KeepAlive: Packet {
     
-    var time: Int64
+    var randomId: Int64
     
     required init() {
-        time = -1
+        randomId = 0
     }
     
     func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        self.time = buffer.readInteger(as: Int64.self) ?? self.time
+        randomId = protocolVersion >= ProtocolConstants.minecraft_1_12_2 ?
+            buffer.readInteger(as: Int64.self) ?? randomId :
+            Int64(buffer.readVarInt() ?? Int32(randomId))
     }
     
     func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        buffer.writeInteger(time)
+        if protocolVersion >= ProtocolConstants.minecraft_1_12_2 {
+            buffer.writeInteger(randomId)
+        } else {
+            buffer.writeVarInt(value: Int32(randomId))
+        }
     }
     
     func toString() -> String {
-        return "PingPacket(time: \(time))"
+        return "KeepAlive(randomId: \(randomId))"
     }
     
 }

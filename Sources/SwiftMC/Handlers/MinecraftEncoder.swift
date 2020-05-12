@@ -51,7 +51,7 @@ class MinecraftEncoder: MessageToByteEncoder {
     // Frame encoder
     func frameEncoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
         out.writeVarInt(value: Int32(from.readableBytes))
-        out.writeBytes(from.readBytes(length: from.readableBytes) ?? [])
+        out.writeBuffer(&from)
     }
     
     // Packet encoder
@@ -62,7 +62,7 @@ class MinecraftEncoder: MessageToByteEncoder {
             out.writeVarInt(value: id)
             
             // And write packet content
-            data.writePacket(to: &out)
+            data.writePacket(to: &out, direction: direction, protocolVersion: protocolVersion)
         }
     }
     

@@ -36,7 +36,7 @@ class Kick: Packet {
         message = buffer.readVarString() ?? message
     }
     
-    func writePacket(to buffer: inout ByteBuffer) {
+    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: message)
     }
     

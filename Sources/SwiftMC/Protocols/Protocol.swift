@@ -28,6 +28,13 @@ class Prot {
         ])
     }
     static let GAME = Prot(name: "GAME") { to_server, to_client in
+        to_client.registerPacket(packetClass: KeepAlive.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x1F),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x21),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x20),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x21)
+        ])
         // ...
         to_client.registerPacket(packetClass: Kick.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x40),
@@ -57,6 +64,13 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
         ])
         // ...
+        to_client.registerPacket(packetClass: LoginSuccess.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x02)
+        ])
+        // ...
+        to_server.registerPacket(packetClass: LoginRequest.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
+        ])
     }
     
     // Variables

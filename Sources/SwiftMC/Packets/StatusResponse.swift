@@ -36,7 +36,7 @@ class StatusResponse: Packet {
         response = buffer.readVarString() ?? response
     }
     
-    func writePacket(to buffer: inout ByteBuffer) {
+    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: response)
     }
     

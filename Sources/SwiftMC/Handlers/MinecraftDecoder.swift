@@ -56,6 +56,9 @@ class MinecraftDecoder: ByteToMessageDecoder {
     
     // Legacy decoder
     func legacyDecoder(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws {
+        // Save reader index
+        let readerIndex = buffer.readerIndex
+        
         // Read packet id
         if let packetID = buffer.readBytes(length: 1)?.first {
             // Check packet type
@@ -70,7 +73,7 @@ class MinecraftDecoder: ByteToMessageDecoder {
         }
         
         // Else, reset
-        buffer.moveReaderIndex(to: 0)
+        buffer.moveReaderIndex(to: readerIndex)
     }
     
     // Frame decoder
