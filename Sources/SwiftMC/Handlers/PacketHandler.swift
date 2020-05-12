@@ -22,9 +22,11 @@ import NIO
 
 protocol PacketHandler {
     
-    func connected(channel: Channel)
+    func connected(channel: ChannelWrapper)
     
-    func disconnected(channel: Channel)
+    func disconnected(channel: ChannelWrapper)
+    
+    func shouldHandle(wrapper: PackerWrapper) -> Bool
     
     func handle(wrapper: PackerWrapper)
     

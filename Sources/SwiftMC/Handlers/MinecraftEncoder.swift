@@ -38,12 +38,33 @@ class MinecraftEncoder: MessageToByteEncoder {
     }
     
     func encode(data: Packet, out: inout ByteBuffer) throws {
-        print("EXECUTING PACKET_ENCODER")
-        // Write packet id
-        out.writeInteger(0x00 as Int32)
+        // Packet encoder
+        try packetEncoder(data: data, out: &out)
         
-        // And write packet content
-        data.writePacket(to: &out)
+        // Frame encoder
+        try frameEncoder(data: data, out: &out)
+    }
+    
+    // Frame encoder
+    func frameEncoder(data: Packet, out: inout ByteBuffer) throws {
+        let bodyLen = Int32(out.readableBytes)
+        
+        out.writeVarInt(value: bodyLen)
+        out.writeBytes(out.readBytes(length: out.readableBytes) ?? [])
+    }
+    
+    // Packet encoder
+    func packetEncoder(data: Packet, out: inout ByteBuffer) throws {
+        // Get direction
+        if let direction = server ? prot.to_client : prot.to_server, let id = direction.getId(for: type(of: data), version: protocolVersion) {
+            // Write packet id
+            out.writeVarInt(value: id)
+            
+            // And write packet content
+            data.writePacket(to: &out)
+            
+            print("S -> C", data.toString())
+        }
     }
     
 }

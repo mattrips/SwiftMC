@@ -89,11 +89,17 @@ public class SwiftMC {
         
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
-                channel.pipeline.addHandler(ByteToMessageHandler(MinecraftDecoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.protocolVersion)), name: "PACKER_DECODER", position: .last).flatMap {
-                    channel.pipeline.addHandler(MessageToByteHandler(MinecraftEncoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.protocolVersion)), name: "PACKER_ENCODER", position: .last)
-                }.flatMap {
-                    channel.pipeline.addHandler(ClientHandler(protocolVersion: self.protocolVersion), name: "BOSS_HANDLER", position: .last)
-                }
+                // Create objects
+                let decoder = MinecraftDecoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.protocolVersion)
+                let encoder = MinecraftEncoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.protocolVersion)
+                let wrapper = ChannelWrapper(channel: channel, decoder: decoder, encoder: encoder)
+                
+                // Add then to pipeline
+                return channel.pipeline.addHandlers([
+                    ByteToMessageHandler(decoder),
+                    MessageToByteHandler(encoder),
+                    ClientHandler(channelWrapper: wrapper)
+                ])
             }
         
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels

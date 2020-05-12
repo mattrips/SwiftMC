@@ -39,15 +39,15 @@ class MinecraftDecoder: ByteToMessageDecoder {
     
     // Decode wrapper
     func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-        print("EXECUTING LEGACY_DECODER")
+        // Legacy decoder
         try legacyDecoder(context: context, buffer: &buffer)
         
-        print("EXECUTING FRAME_DECODER")
+        // Frame decoder
         if let result = try frameDecoder(context: context, buffer: &buffer) {
             return result
         }
         
-        print("EXECUTING PACKET_DECODER")
+        // Packet decoder
         if let result = try packetDecoder(context: context, buffer: &buffer) {
             return result
         }
@@ -108,16 +108,18 @@ class MinecraftDecoder: ByteToMessageDecoder {
         // Get direction
         if let direction = server ? prot.to_server : prot.to_client {
             // Read the packet id
-            if let packetID = buffer.readInteger(as: UInt8.self) {
+            if let packetID = buffer.readVarInt() {
                 // Create the packet corresponding to this id
-                if var packet = direction.createPacket(id: Int32(packetID), version: protocolVersion) {
+                if let packet = direction.createPacket(id: packetID, version: protocolVersion) {
                     // Read packet
-                    packet.readPacket(from: &buffer)
+                    packet.readPacket(from: &buffer, direction: direction, protocolVersion: protocolVersion)
                     context.fireChannelRead(wrapInboundOut(PackerWrapper(packet: packet, buffer: buffer)))
+                    print("C -> S", packet.toString())
                 } else {
                     // Skip
                     buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
                     context.fireChannelRead(wrapInboundOut(PackerWrapper(packet: nil, buffer: buffer)))
+                    print("Received an unknown packet: \(prot.name):\(packetID)")
                 }
             }
         }

@@ -20,20 +20,28 @@
 import Foundation
 import NIO
 
-class LegacyHandshake: Packet {
+class StatusResponse: Packet {
     
-    required init() {}
+    var response: String
+    
+    required init() {
+        response = ""
+    }
+    
+    init(response: String) {
+        self.response = response
+    }
     
     func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        // ???
+        response = buffer.readVarString() ?? response
     }
     
     func writePacket(to buffer: inout ByteBuffer) {
-        // ???
+        buffer.writeVarString(string: response)
     }
     
     func toString() -> String {
-        return "LegacyHandshake()"
+        return "StatusResponse(response: \(response))"
     }
     
 }

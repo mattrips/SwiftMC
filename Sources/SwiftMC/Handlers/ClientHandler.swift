@@ -27,12 +27,12 @@ public final class ClientHandler: ChannelInboundHandler {
     public typealias OutboundOut = PackerWrapper
     
     // Variables
-    let protocolVersion: Int32
-    var handler: PacketHandler
+    let channelWrapper: ChannelWrapper
+    var handler: PacketHandler?
     
     // Initializer
-    init(protocolVersion: Int32) {
-        self.protocolVersion = protocolVersion
+    init(channelWrapper: ChannelWrapper) {
+        self.channelWrapper = channelWrapper
         self.handler = InitialHandler()
     }
     
@@ -40,16 +40,20 @@ public final class ClientHandler: ChannelInboundHandler {
     public func channelActive(context: ChannelHandlerContext) {
         // Logging
         print("[+] Client connecting: \(context.channel.remoteAddress?.description ?? "-")")
-        handler.connected(channel: context.channel)
+        handler?.connected(channel: channelWrapper)
     }
     
     public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         // Read wrapper
         let wrapper = unwrapInboundIn(data)
-        print(wrapper.packet?.toString() ?? "Unknown packet")
         
         // Handle packet
-        handler.handle(wrapper: wrapper)
+        if let handler = handler {
+            let sendPacket = handler.shouldHandle(wrapper: wrapper)
+            if sendPacket {
+                handler.handle(wrapper: wrapper)
+            }
+        }
     }
     
     // This method is called if the socket is closed in a clean way.

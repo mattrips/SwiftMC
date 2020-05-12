@@ -20,29 +20,36 @@
 import Foundation
 import NIO
 
-struct Handshake: Packet {
+class Handshake: Packet {
     
-    var protocolVersion: Int32?
-    var host: String?
-    var port: Int16?
-    var requestedProtocol: Int32?
+    var protocolVersion: Int32
+    var host: String
+    var port: Int16
+    var requestedProtocol: Int32
     
-    mutating func readPacket(from buffer: inout ByteBuffer) {
-        protocolVersion = buffer.readInteger(as: Int32.self)
-        host = buffer.readString(length: Int(buffer.readInteger(as: Int32.self) ?? 0))
-        port = buffer.readInteger(as: Int16.self)
-        requestedProtocol = buffer.readInteger(as: Int32.self)
+    required init() {
+        protocolVersion = -1
+        host = ""
+        port = -1
+        requestedProtocol = -1
+    }
+    
+    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        self.protocolVersion = buffer.readVarInt() ?? self.protocolVersion
+        self.host = buffer.readVarString() ?? self.host
+        self.port = buffer.readInteger(as: Int16.self) ?? self.port
+        self.requestedProtocol = buffer.readVarInt() ?? self.requestedProtocol
     }
     
     func writePacket(to buffer: inout ByteBuffer) {
-        buffer.writeInteger(protocolVersion ?? 0)
-        buffer.writeInteger(Int32((host ?? "").count))
-        buffer.writeString(host ?? "")
-        buffer.writeInteger(requestedProtocol ?? 0)
+        buffer.writeVarInt(value: protocolVersion)
+        buffer.writeVarString(string: host)
+        buffer.writeInteger(port)
+        buffer.writeVarInt(value: requestedProtocol)
     }
     
     func toString() -> String {
-        return "Handshake(protocolVersion: \(protocolVersion ?? 0), host: \(host ?? ""), port: \(port ?? 0), requestedProtocol: \(requestedProtocol ?? 0))"
+        return "Handshake(protocolVersion: \(protocolVersion), host: \(host), port: \(port), requestedProtocol: \(requestedProtocol))"
     }
     
 }

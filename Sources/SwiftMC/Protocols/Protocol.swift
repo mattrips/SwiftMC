@@ -28,11 +28,16 @@ class Prot {
         ])
     }
     static let STATUS = Prot(name: "STATUS") { to_server, to_client in
-        
+        to_client.registerPacket(packetClass: StatusResponse.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
+        ])
         to_client.registerPacket(packetClass: PingPacket.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x01)
         ])
         
+        to_server.registerPacket(packetClass: StatusRequest.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
+        ])
         to_server.registerPacket(packetClass: PingPacket.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x01)
         ])

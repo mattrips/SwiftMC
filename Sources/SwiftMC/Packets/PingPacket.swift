@@ -20,20 +20,24 @@
 import Foundation
 import NIO
 
-struct PingPacket: Packet {
+class PingPacket: Packet {
     
-    var time: Int64?
+    var time: Int64
     
-    mutating func readPacket(from buffer: inout ByteBuffer) {
-        time = buffer.readInteger(as: Int64.self)
+    required init() {
+        time = -1
+    }
+    
+    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        self.time = buffer.readInteger(as: Int64.self) ?? self.time
     }
     
     func writePacket(to buffer: inout ByteBuffer) {
-        buffer.writeInteger(time ?? 0)
+        buffer.writeInteger(time)
     }
     
     func toString() -> String {
-        return "PingPacket(time: \(time ?? 0))"
+        return "PingPacket(time: \(time))"
     }
     
 }

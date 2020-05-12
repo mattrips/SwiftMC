@@ -24,7 +24,7 @@ protocol Packet {
     
     init()
     
-    mutating func readPacket(from buffer: inout ByteBuffer)
+    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32)
     
     func writePacket(to buffer: inout ByteBuffer)
     

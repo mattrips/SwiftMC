@@ -20,15 +20,35 @@
 import Foundation
 import NIO
 
-struct KickStringWriter: MessageToByteEncoder {
+public class ChannelWrapper {
     
-    typealias OutboundIn = String
+    // Vars
+    var channel: Channel
+    var decoder: MinecraftDecoder
+    var encoder: MinecraftEncoder
+    var closed: Bool = false
+    var closing: Bool = false
     
-    func encode(data: String, out: inout ByteBuffer) throws {
-        print("EXECUTING KICK_ENCODER")
-        out.writeInteger(0xFF as UInt8)
-        out.writeInteger(Int32(data.count))
-        out.writeString(data)
+    init(channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder) {
+        self.channel = channel
+        self.decoder = decoder
+        self.encoder = encoder
+    }
+    
+    func setProtocol(prot: Prot) {
+        decoder.prot = prot
+        encoder.prot = prot
+    }
+    
+    func setVersion(version: Int32) {
+        decoder.protocolVersion = version
+        encoder.protocolVersion = version
+    }
+    
+    func send(packet: Packet) {
+        if !closed {
+            channel.writeAndFlush(packet, promise: nil)
+        }
     }
     
 }

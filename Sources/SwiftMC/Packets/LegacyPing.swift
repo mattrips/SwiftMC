@@ -20,11 +20,19 @@
 import Foundation
 import NIO
 
-struct LegacyPing: Packet {
+class LegacyPing: Packet {
     
-    var v1_5: Bool?
+    var v1_5: Bool
     
-    func readPacket(from buffer: inout ByteBuffer) {
+    required init() {
+        self.v1_5 = false
+    }
+    
+    init(v1_5: Bool) {
+        self.v1_5 = v1_5
+    }
+    
+    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         // ???
     }
     
@@ -33,7 +41,7 @@ struct LegacyPing: Packet {
     }
     
     func toString() -> String {
-        return "LegacyPing(v1_5: \(v1_5 ?? false))"
+        return "LegacyPing(v1_5: \(v1_5))"
     }
     
 }
