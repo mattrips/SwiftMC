@@ -38,12 +38,23 @@ class InitialHandler: PacketHandler {
     
     func handle(wrapper: PackerWrapper) {
         // Check packet type
+        if let pingPacket = wrapper.packet as? PingPacket {
+            self.handle(pingPacket: pingPacket)
+        }
         if let handshake = wrapper.packet as? Handshake {
             self.handle(handshake: handshake)
         }
         if let statusRequest = wrapper.packet as? StatusRequest {
             self.handle(statusRequest: statusRequest)
         }
+    }
+    
+    func handle(pingPacket: PingPacket) {
+        // Send back
+        channel?.send(packet: pingPacket)
+        
+        // And disconnect
+        disconnect(reason: "")
     }
     
     func handle(handshake: Handshake) {
@@ -67,6 +78,9 @@ class InitialHandler: PacketHandler {
         case 1:
             // Ping
             channel?.setProtocol(prot: .STATUS)
+        case 2:
+            // Login
+            disconnect(reason: "Not ready!")
         default:
             return
             
@@ -93,6 +107,16 @@ class InitialHandler: PacketHandler {
         // Send packet
         if let json = try? JSONSerialization.data(withJSONObject: response, options: []), let string = String(bytes: json, encoding: .utf8) {
             channel?.send(packet: StatusResponse(response: string))
+        }
+    }
+    
+    func disconnect(reason: String) {
+        if let json = try? JSONSerialization.data(withJSONObject: ["text": reason], options: []), let string = String(bytes: json, encoding: .utf8) {
+            // Send kick packet
+            channel?.close(packet: Kick(message: string))
+        } else {
+            // Just close
+            channel?.close()
         }
     }
     

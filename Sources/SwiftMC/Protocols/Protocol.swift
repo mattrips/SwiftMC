@@ -27,6 +27,17 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
         ])
     }
+    static let GAME = Prot(name: "GAME") { to_server, to_client in
+        // ...
+        to_client.registerPacket(packetClass: Kick.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x40),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x1A),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x1B),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x1A),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0xAB)
+        ])
+        // ...
+    }
     static let STATUS = Prot(name: "STATUS") { to_server, to_client in
         to_client.registerPacket(packetClass: StatusResponse.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
@@ -34,13 +45,18 @@ class Prot {
         to_client.registerPacket(packetClass: PingPacket.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x01)
         ])
-        
         to_server.registerPacket(packetClass: StatusRequest.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
         ])
         to_server.registerPacket(packetClass: PingPacket.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x01)
         ])
+    }
+    static let LOGIN = Prot(name: "LOGIN") { to_server, to_client in
+        to_client.registerPacket(packetClass: Kick.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
+        ])
+        // ...
     }
     
     // Variables

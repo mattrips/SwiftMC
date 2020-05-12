@@ -114,7 +114,6 @@ class MinecraftDecoder: ByteToMessageDecoder {
                     // Read packet
                     packet.readPacket(from: &buffer, direction: direction, protocolVersion: protocolVersion)
                     context.fireChannelRead(wrapInboundOut(PackerWrapper(packet: packet, buffer: buffer)))
-                    print("C -> S", packet.toString())
                 } else {
                     // Skip
                     buffer.moveReaderIndex(forwardBy: buffer.readableBytes)

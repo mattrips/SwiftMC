@@ -63,8 +63,6 @@ class MinecraftEncoder: MessageToByteEncoder {
             
             // And write packet content
             data.writePacket(to: &out)
-            
-            print("S -> C", data.toString())
         }
     }
     

@@ -51,4 +51,20 @@ public class ChannelWrapper {
         }
     }
     
+    func close(packet: Packet? = nil) {
+        if !closed {
+            // Mark as closed
+            closing = true
+            closed = true
+            
+            // Send close packet if there is one
+            if let packet = packet {
+                let _ = channel.writeAndFlush(packet).and(channel.close())
+            } else {
+                channel.flush()
+                let _ = channel.close()
+            }
+        }
+    }
+    
 }

@@ -58,7 +58,15 @@ public final class ClientHandler: ChannelInboundHandler {
     
     // This method is called if the socket is closed in a clean way.
     public func channelInactive(context: ChannelHandlerContext) {
-        print("[+] Channel closed.")
+        print("[+] Client disconnected.")
+        if let handler = handler {
+            // Mark as closed
+            channelWrapper.closing = true
+            channelWrapper.closed = true
+            
+            // And close connection
+            handler.disconnected(channel: channelWrapper)
+        }
     }
     
     // Called if an error happens. Log and close the socket.
