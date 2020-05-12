@@ -61,7 +61,7 @@ extension ByteBuffer {
             if value != 0 {
                 part |= 0x80
             }
-            writeInteger(UInt8(part), as: UInt8.self)
+            writeBytes([UInt8(part)])
             if value == 0 {
                 break
             }

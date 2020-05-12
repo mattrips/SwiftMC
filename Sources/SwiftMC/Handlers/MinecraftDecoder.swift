@@ -57,7 +57,7 @@ class MinecraftDecoder: ByteToMessageDecoder {
     // Legacy decoder
     func legacyDecoder(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws {
         // Read packet id
-        if let packetID = buffer.readInteger(as: UInt8.self) {
+        if let packetID = buffer.readBytes(length: 1)?.first {
             // Check packet type
             if packetID == 0xFE {
                 // Legacy ping
@@ -86,7 +86,7 @@ class MinecraftDecoder: ByteToMessageDecoder {
             }
             
             // Read byte
-            buf[i] = buffer.readInteger(as: UInt8.self) ?? 0
+            buf[i] = buffer.readBytes(length: 1)?.first ?? 0
             if buf[i] >= 0 {
                 var temp = ByteBuffer(ByteBufferView(buf))
                 let length = temp.readInteger(as: Int32.self) ?? 0

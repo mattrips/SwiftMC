@@ -38,19 +38,20 @@ class MinecraftEncoder: MessageToByteEncoder {
     }
     
     func encode(data: Packet, out: inout ByteBuffer) throws {
+        // Init a temporary buffer
+        var buffer = ByteBuffer(ByteBufferView())
+        
         // Packet encoder
-        try packetEncoder(data: data, out: &out)
+        try packetEncoder(data: data, out: &buffer)
         
         // Frame encoder
-        try frameEncoder(data: data, out: &out)
+        try frameEncoder(from: &buffer, out: &out)
     }
     
     // Frame encoder
-    func frameEncoder(data: Packet, out: inout ByteBuffer) throws {
-        let bodyLen = Int32(out.readableBytes)
-        
-        out.writeVarInt(value: bodyLen)
-        out.writeBytes(out.readBytes(length: out.readableBytes) ?? [])
+    func frameEncoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
+        out.writeVarInt(value: Int32(from.readableBytes))
+        out.writeBytes(from.readBytes(length: from.readableBytes) ?? [])
     }
     
     // Packet encoder
