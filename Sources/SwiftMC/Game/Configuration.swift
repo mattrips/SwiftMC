@@ -23,7 +23,7 @@ public class Configuration {
     
     public let protocolVersion: Int32
     public let port: Int
-    public var name: String = "My server"
+    public var motd: ChatMessage?
     public var slots: Int = 42
     public var debug: Bool = false
     
@@ -32,8 +32,8 @@ public class Configuration {
         self.port = port
     }
     
-    public func with(name: String) -> Configuration {
-        self.name = name
+    public func with(motd: ChatMessage) -> Configuration {
+        self.motd = motd
         return self
     }
     

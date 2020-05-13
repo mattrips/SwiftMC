@@ -107,8 +107,8 @@ class InitialHandler: PacketHandler {
     
     func handle(statusRequest: StatusRequest) {
         // Send packet
-        if let channel = channel, let json = try? JSONSerialization.data(withJSONObject: channel.server.getServerInfo(preferedProtocol: channel.decoder.protocolVersion), options: []), let string = String(bytes: json, encoding: .utf8) {
-            channel.send(packet: StatusResponse(response: string))
+        if let channel = channel, let json = channel.server.getServerInfo(preferedProtocol: channel.decoder.protocolVersion).toJSON() {
+            channel.send(packet: StatusResponse(response: json))
         }
     }
     

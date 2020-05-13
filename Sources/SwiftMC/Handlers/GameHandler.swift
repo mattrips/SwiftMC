@@ -27,10 +27,16 @@ class GameHandler: PacketHandler {
     func bindChannel(channel: ChannelWrapper?) {
         self.channel = channel
         
-        if let channel = channel {
+        if let channel = channel, let loginSuccess = channel.login {
             // Send login packet (game starts)
             channel.send(packet: Login(entityId: 1, gameMode: 1, dimension: 0, seed: 0, difficulty: 0, maxPlayers: 1, levelType: "default", viewDistance: 16, reducedDebugInfo: false, normalRespawn: true))
             channel.send(packet: Position(x: 15, y: 100, z: 15, teleportId: 1))
+            
+            // Chat message
+            channel.server.broadcast(packet: Chat(message: ChatMessage(extra: [
+                ChatMessage(text: "[+] ").with(color: .gold),
+                ChatMessage(text: loginSuccess.username).with(color: .yellow)
+            ])))
         }
     }
     
@@ -48,7 +54,21 @@ class GameHandler: PacketHandler {
     
     func handle(wrapper: PackerWrapper) {
         // Check packet type
+        if let chat = wrapper.packet as? Chat {
+            self.handle(chat: chat)
+        }
+    }
+    
+    func handle(chat: Chat) {
+        // Create final message
+        let message = "\(channel?.login?.username ?? "NULL"): \(chat.message)"
         
+        // Send the message to all players
+        let chatMessage = ChatMessage(text: message)
+        channel?.server.broadcast(packet: Chat(message: chatMessage))
+        
+        // Print in log the message
+        channel?.server.log(message)
     }
     
     func disconnect(reason: String) {

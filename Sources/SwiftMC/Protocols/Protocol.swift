@@ -41,6 +41,12 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x25),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x26)
         ])
+        to_client.registerPacket(packetClass: Chat.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x02),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x0F),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x0E),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x0F)
+        ])
         // ...
         to_client.registerPacket(packetClass: Position.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x08),
@@ -65,6 +71,13 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12, packetID: 0x0C),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x0B),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x0F)
+        ])
+        to_server.registerPacket(packetClass: Chat.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x01),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x02),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12, packetID: 0x03),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x02),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x03)
         ])
     }
     static let STATUS = Prot(name: "STATUS") { to_server, to_client in

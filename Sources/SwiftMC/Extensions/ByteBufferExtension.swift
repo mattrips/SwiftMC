@@ -28,7 +28,7 @@ extension ByteBuffer {
     }
     
     mutating func writeVarString(string: String) {
-        writeVarInt(value: Int32(string.count))
+        writeVarInt(value: Int32(string.data(using: .utf8)?.count ?? 0))
         writeString(string)
     }
     

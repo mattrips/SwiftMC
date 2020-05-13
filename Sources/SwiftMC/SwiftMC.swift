@@ -51,9 +51,7 @@ public class SwiftMC {
         // Start a timer for KeepAlive
         eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(10), delay: TimeAmount.seconds(10)) { task in
             // Send keep alive to connected clients
-            self.clients.forEach { wrapper in
-                wrapper.send(packet: KeepAlive())
-            }
+            self.broadcast(packet: KeepAlive())
         }
         
         // Listen and wait
@@ -93,6 +91,7 @@ public class SwiftMC {
         }
     }
     
+    // Initialize server channels
     func makeBootstrap() -> ServerBootstrap {
         let reuseAddrOpt = ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR)
         return ServerBootstrap(group: eventLoopGroup)
@@ -124,30 +123,37 @@ public class SwiftMC {
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
     }
     
+    // Log
     func log(_ string: String) {
         // Allow custom log channels (like remote access)
         print("[\(Date())] \(string)")
     }
     
-    func getServerInfo(preferedProtocol: Int32) -> [String: Any] {
+    // Get server infos for ping
+    func getServerInfo(preferedProtocol: Int32) -> ServerInfo {
         // Get players
         let players = self.players
         
         // Return the payload
-        return [
-            "version": [
-                "name": "SwiftMC *",
-                "protocol": ProtocolConstants.supported_versions_ids.contains(preferedProtocol) ? preferedProtocol : configuration.protocolVersion
-            ],
-            "players": [
-                "max": configuration.slots,
-                "online": players.count,
-                "sample": []
-            ],
-            "description": [
-                "text": "SwiftMC: \(configuration.name)"
-            ]
-        ]
+        return ServerInfo(
+            version: ServerInfo.ServerVersion(
+                name: "SwiftMC *",
+                protocolVersion: Int(ProtocolConstants.supported_versions_ids.contains(preferedProtocol) ? preferedProtocol : configuration.protocolVersion)
+            ),
+            players: ServerInfo.ServerPlayers(
+                max: configuration.slots,
+                online: players.count,
+                sample: []
+            ),
+            description: configuration.motd ?? ChatMessage(text: "A SwiftMC server")
+        )
+    }
+    
+    // Broadcast a packet to all players
+    func broadcast(packet: Packet) {
+        players.forEach { player in
+            player.send(packet: packet)
+        }
     }
     
 }
