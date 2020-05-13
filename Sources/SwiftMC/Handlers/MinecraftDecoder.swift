@@ -19,38 +19,50 @@
 
 import Foundation
 import NIO
+import CompressNIO
 
 class MinecraftDecoder: ByteToMessageDecoder {
     
     // Output alias
-    typealias InboundOut = PackerWrapper
+    typealias InboundOut = Packet
     
     // Configuration for decoding
-    var prot: Prot
+    var channel: ChannelWrapper?
     var server: Bool
-    var protocolVersion: Int32
     
     // Initializer
-    init(prot: Prot, server: Bool, protocolVersion: Int32) {
-        self.prot = prot
+    init(server: Bool) {
         self.server = server
-        self.protocolVersion = protocolVersion
     }
     
     // Decode wrapper
     func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
+        // Copy buffer
+        var newBuffer = buffer
+        
         // Legacy decoder
-        try legacyDecoder(context: context, buffer: &buffer)
+        try legacyDecoder(context: context, buffer: &newBuffer)
         
         // Frame decoder
-        if let result = try frameDecoder(context: context, buffer: &buffer) {
+        if let result = try frameDecoder(context: context, buffer: &newBuffer) {
             return result
+        }
+        
+        // Decompress if needed
+        if let threshold = channel?.threshold, threshold != -1 {
+            // Move buffer
+            var oldBuffer = newBuffer.slice()
+            newBuffer = ByteBuffer(ByteBufferView())
+            
+            // Handle
+            try thresholdEncoder(oldBuffer: &oldBuffer, newBuffer: &newBuffer)
         }
         
         // Packet decoder
-        if let result = try packetDecoder(context: context, buffer: &buffer) {
-            return result
-        }
+        try packetDecoder(context: context, buffer: &newBuffer)
+        
+        // Move index
+        buffer.moveReaderIndex(to: newBuffer.readerIndex)
         return .continue
     }
     
@@ -64,11 +76,11 @@ class MinecraftDecoder: ByteToMessageDecoder {
             // Check packet type
             if packetID == 0xFE {
                 // Legacy ping
-                context.fireChannelRead(wrapInboundOut(PackerWrapper(packetId: Int32(packetID), packet: LegacyPing(v1_5: buffer.readableBytes > 0 && buffer.readInteger(as: UInt8.self) ?? 0 == 0x01))))
+                context.fireChannelRead(wrapInboundOut(LegacyPing(v1_5: buffer.readableBytes > 0 && buffer.readInteger(as: UInt8.self) ?? 0 == 0x01)))
             } else if packetID == 0x02 && buffer.readableBytes > 0 {
                 // Legacy handshake
                 buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
-                context.fireChannelRead(wrapInboundOut(PackerWrapper(packetId: Int32(packetID), packet: LegacyHandshake(), buffer: nil)))
+                context.fireChannelRead(wrapInboundOut(LegacyHandshake()))
             }
         }
         
@@ -106,25 +118,39 @@ class MinecraftDecoder: ByteToMessageDecoder {
         return nil
     }
     
+    // Threshold
+    func thresholdEncoder(oldBuffer: inout ByteBuffer, newBuffer: inout ByteBuffer) throws {
+        // Read size
+        let size = oldBuffer.readVarInt()
+        if size == 0 {
+            var slice = oldBuffer.slice()
+            newBuffer.writeBuffer(&slice)
+            oldBuffer.moveReaderIndex(forwardBy: oldBuffer.readableBytes)
+        } else {
+            try oldBuffer.decompress(to: &newBuffer, with: .deflate)
+        }
+    }
+    
     // Packet decoder
-    func packetDecoder(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState? {
+    func packetDecoder(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws {
         // Get direction
-        if let direction = server ? prot.to_server : prot.to_client {
+        if let channel = channel, let direction = server ? channel.prot.to_server : channel.prot.to_client {
             // Read the packet id
             if let packetID = buffer.readVarInt() {
                 // Create the packet corresponding to this id
-                if let packet = direction.createPacket(id: packetID, version: protocolVersion) {
-                    // Read packet
-                    packet.readPacket(from: &buffer, direction: direction, protocolVersion: protocolVersion)
-                    context.fireChannelRead(wrapInboundOut(PackerWrapper(packetId: packetID, packet: packet, buffer: buffer)))
-                } else {
-                    // Skip
-                    buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
-                    context.fireChannelRead(wrapInboundOut(PackerWrapper(packetId: packetID, packet: nil, buffer: buffer)))
+                let packet = direction.createPacket(id: packetID, version: channel.protocolVersion)
+                
+                // If packet if unknown
+                if let unknown = packet as? UnknownPacket {
+                    // Set packet id
+                    unknown.packetId = packetID
                 }
+                
+                // Read packet
+                packet.readPacket(from: &buffer, direction: direction, protocolVersion: channel.protocolVersion)
+                context.fireChannelRead(wrapInboundOut(packet))
             }
         }
-        return .continue
     }
     
 }

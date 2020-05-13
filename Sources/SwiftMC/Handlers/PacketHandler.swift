@@ -26,8 +26,8 @@ protocol PacketHandler {
     
     func disconnected(channel: ChannelWrapper)
     
-    func shouldHandle(wrapper: PackerWrapper) -> Bool
+    func shouldHandle(packet: Packet) -> Bool
     
-    func handle(wrapper: PackerWrapper)
+    func handle(packet: Packet)
     
 }

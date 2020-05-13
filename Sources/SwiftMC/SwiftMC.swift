@@ -23,10 +23,18 @@ import NIO
 // Main class
 public class SwiftMC {
     
-    // Variables
+    // Server configuration
     let configuration: Configuration
     let eventLoopGroup: EventLoopGroup
     var serverChannel: Channel?
+    
+    // Commands
+    var commands: [String: Command]
+    
+    // Worlds
+    var worlds: [WorldProtocol]
+    
+    // Client handling
     var clients: [ChannelWrapper]
     var players: [ChannelWrapper] {
         get {
@@ -39,7 +47,9 @@ public class SwiftMC {
     // Initializer
     public init(configuration: Configuration) {
         self.configuration = configuration
-        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+        self.commands = [:]
+        self.worlds = []
         self.clients = []
     }
     
@@ -48,10 +58,24 @@ public class SwiftMC {
         // Start
         log("Starting server...")
         
+        // Register basic commands
+        log("Registering server commands...")
+        registerCommand("help", command: HelpCommand())
+        registerCommand("world", command: WorldCommand())
+        
+        // Load worlds
+        log("Loading worlds...")
+        //loadWorld(world: RemoteWorld(host: "192.168.5.51", port: 25566))
+        loadWorld(world: LocalWorld())
+        
         // Start a timer for KeepAlive
         eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(10), delay: TimeAmount.seconds(10)) { task in
             // Send keep alive to connected clients
-            self.broadcast(packet: KeepAlive())
+            self.players.filter { player in
+                player.remoteChannel == nil
+            }.forEach { player in
+                player.send(packet: KeepAlive())
+            }
         }
         
         // Listen and wait
@@ -102,9 +126,9 @@ public class SwiftMC {
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
                 // Create objects
-                let decoder = MinecraftDecoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.configuration.protocolVersion)
-                let encoder = MinecraftEncoder(prot: Prot.HANDSHAKE, server: true, protocolVersion: self.configuration.protocolVersion)
-                let wrapper = ChannelWrapper(server: self, channel: channel, decoder: decoder, encoder: encoder)
+                let decoder = MinecraftDecoder(server: true)
+                let encoder = MinecraftEncoder(server: true)
+                let wrapper = ChannelWrapper(server: self, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: self.configuration.protocolVersion)
                 
                 // Add client to list
                 self.clients.append(wrapper)
@@ -145,7 +169,8 @@ public class SwiftMC {
                 online: players.count,
                 sample: []
             ),
-            description: configuration.motd ?? ChatMessage(text: "A SwiftMC server")
+            description: configuration.motd ?? ChatMessage(text: "A SwiftMC server"),
+            favicon: configuration.favicon
         )
     }
     
@@ -154,6 +179,22 @@ public class SwiftMC {
         players.forEach { player in
             player.send(packet: packet)
         }
+    }
+    
+    // Register a command
+    public func registerCommand(_ name: String, command: Command) {
+        let name = name.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: " "))
+        if commands[name] != nil {
+            return
+        }
+        commands[name] = command
+        log("Registered command /\(name)")
+    }
+    
+    // Load a world
+    public func loadWorld(world: WorldProtocol) {
+        worlds.append(world)
+        log("Loaded one world!")
     }
     
 }

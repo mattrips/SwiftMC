@@ -19,7 +19,7 @@
 
 import Foundation
 
-class DirectionData {
+public class DirectionData {
     
     // Variables
     var prot: Prot
@@ -75,11 +75,11 @@ class DirectionData {
     }
     
     // Create a packet from id
-    func createPacket(id: Int32, version: Int32) -> Packet? {
-        guard let protocolData = getProtocolData(version: version), id <= Prot.max_packet_id else {
-            return nil
+    func createPacket(id: Int32, version: Int32) -> Packet {
+        if let protocolData = getProtocolData(version: version), id <= Prot.max_packet_id, let packet = protocolData.packetMap[id]?.init() {
+            return packet
         }
-        return protocolData.packetMap[id]?.init()
+        return UnknownPacket()
     }
     
     // Get id from a packet

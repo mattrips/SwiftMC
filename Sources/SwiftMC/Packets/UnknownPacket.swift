@@ -20,10 +20,26 @@
 import Foundation
 import NIO
 
-public struct PackerWrapper {
+class UnknownPacket: Packet {
     
     var packetId: Int32
-    var packet: Packet?
-    var buffer: ByteBuffer?
+    var bytes: [UInt8]
+    
+    required init() {
+        packetId = 0
+        bytes = []
+    }
+    
+    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        self.bytes = buffer.readBytes(length: buffer.readableBytes) ?? bytes
+    }
+    
+    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        buffer.writeBytes(bytes)
+    }
+    
+    func toString() -> String {
+        return "UnknownPacket(packetId: \(packetId), size: \(bytes.count) bytes)"
+    }
     
 }

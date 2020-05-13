@@ -20,14 +20,24 @@
 import Foundation
 import NIO
 
-public protocol Packet {
+class SetCompresion: Packet {
     
-    init()
+    var threshold: Int32
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32)
+    required init() {
+        threshold = 0
+    }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32)
+    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        self.threshold = buffer.readVarInt() ?? self.threshold
+    }
     
-    func toString() -> String
+    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        buffer.writeVarInt(value: threshold)
+    }
+    
+    func toString() -> String {
+        return "SetCompresion(threshold: \(threshold))"
+    }
     
 }

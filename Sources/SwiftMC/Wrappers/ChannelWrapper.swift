@@ -22,37 +22,47 @@ import NIO
 
 public class ChannelWrapper {
     
-    // Vars
+    // Channel related
     var server: SwiftMC
     var channel: Channel
-    var handler: ClientHandler?
-    var decoder: MinecraftDecoder
-    var encoder: MinecraftEncoder
-    var login: LoginSuccess?
+    var handler: ChannelHandler?
+    var threshold: Int32 = -1
     var closed: Bool = false
     var closing: Bool = false
     
-    init(server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder) {
+    // Encoding/Decoding
+    var decoder: MinecraftDecoder
+    var encoder: MinecraftEncoder
+    var protocolVersion: Int32
+    var prot: Prot
+    
+    // Player related
+    var login: LoginSuccess?
+    var world: WorldProtocol?
+    var remoteChannel: ChannelWrapper?
+    
+    init(server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder, prot: Prot, protocolVersion: Int32) {
         self.server = server
         self.channel = channel
         self.decoder = decoder
         self.encoder = encoder
-    }
-    
-    func setProtocol(prot: Prot) {
-        decoder.prot = prot
-        encoder.prot = prot
-    }
-    
-    func setVersion(version: Int32) {
-        decoder.protocolVersion = version
-        encoder.protocolVersion = version
+        self.prot = prot
+        self.protocolVersion = protocolVersion
+        self.decoder.channel = self
+        self.encoder.channel = self
     }
     
     func setHandler(handler: PacketHandler) {
         self.handler?.handler?.disconnected(channel: self)
         self.handler?.handler = handler
         self.handler?.handler?.connected(channel: self)
+    }
+    
+    func setWorld(world: WorldProtocol) {
+        self.world?.disconnect(client: self)
+        self.remoteChannel = nil
+        self.world = world
+        self.world?.connect(client: self)
     }
     
     func send(packet: Packet) {
@@ -65,7 +75,11 @@ public class ChannelWrapper {
             
             // Check for debug
             if server.configuration.debug {
-                server.log("SERVER -> CLIENT: \(packet.toString())")
+                if handler is RemoteWorld.RemoteWorldHandler {
+                    server.log("SERVER -> WORLD: \(packet.toString())")
+                } else {
+                    server.log("SERVER -> CLIENT: \(packet.toString())")
+                }
             }
             
             // Send packet

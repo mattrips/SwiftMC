@@ -18,16 +18,15 @@
 */
 
 import Foundation
-import NIO
 
-public protocol Packet {
+public class WorldCommand: Command {
     
-    init()
+    public func execute(sender: ChannelWrapper, args: [String]) {
+        
+    }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32)
-    
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32)
-    
-    func toString() -> String
+    public func description() -> String {
+        return "Switch world"
+    }
     
 }

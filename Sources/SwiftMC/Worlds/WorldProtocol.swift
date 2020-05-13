@@ -18,16 +18,13 @@
 */
 
 import Foundation
-import NIO
 
-public protocol Packet {
+public protocol WorldProtocol {
     
-    init()
+    func connect(client: ChannelWrapper)
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32)
+    func disconnect(client: ChannelWrapper)
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32)
-    
-    func toString() -> String
+    func handle(packet: Packet, for client: ChannelWrapper)
     
 }

@@ -19,6 +19,7 @@
 
 import Foundation
 import NIO
+import CompressNIO
 
 class MinecraftEncoder: MessageToByteEncoder {
     
@@ -26,26 +27,44 @@ class MinecraftEncoder: MessageToByteEncoder {
     typealias OutboundIn = Packet
     
     // Configuration for encoding
-    var prot: Prot
+    var channel: ChannelWrapper?
     var server: Bool
-    var protocolVersion: Int32
     
     // Initializer
-    init(prot: Prot, server: Bool, protocolVersion: Int32) {
-        self.prot = prot
+    init(server: Bool) {
         self.server = server
-        self.protocolVersion = protocolVersion
     }
     
     func encode(data: Packet, out: inout ByteBuffer) throws {
         // Init a temporary buffer
-        var buffer = ByteBuffer(ByteBufferView())
+        var buffer1 = ByteBuffer(ByteBufferView())
+        var buffer2 = ByteBuffer(ByteBufferView())
         
         // Packet encoder
-        try packetEncoder(data: data, out: &buffer)
+        try packetEncoder(data: data, out: &buffer1)
+        
+        // Check for compression
+        if let threshold = channel?.threshold, threshold != -1 {
+            try thresholdEncoder(threshold: threshold, from: &buffer1, out: &buffer2)
+        } else {
+            buffer2.writeBuffer(&buffer1)
+        }
         
         // Frame encoder
-        try frameEncoder(from: &buffer, out: &out)
+        try frameEncoder(from: &buffer2, out: &out)
+    }
+    
+    // Threshold
+    func thresholdEncoder(threshold: Int32, from: inout ByteBuffer, out: inout ByteBuffer) throws {
+        // Check for size
+        let fromSize = Int32(from.readableBytes)
+        if fromSize < threshold {
+            out.writeVarInt(value: 0)
+            out.writeBuffer(&from)
+        } else {
+            out.writeVarInt(value: fromSize)
+            try from.compress(to: &out, with: .deflate)
+        }
     }
     
     // Frame encoder
@@ -57,12 +76,12 @@ class MinecraftEncoder: MessageToByteEncoder {
     // Packet encoder
     func packetEncoder(data: Packet, out: inout ByteBuffer) throws {
         // Get direction
-        if let direction = server ? prot.to_client : prot.to_server, let id = direction.getId(for: type(of: data), version: protocolVersion) {
+        if let channel = channel, let direction = server ? channel.prot.to_client : channel.prot.to_server, let id = direction.getId(for: type(of: data), version: channel.protocolVersion) {
             // Write packet id
             out.writeVarInt(value: id)
             
             // And write packet content
-            data.writePacket(to: &out, direction: direction, protocolVersion: protocolVersion)
+            data.writePacket(to: &out, direction: direction, protocolVersion: channel.protocolVersion)
         }
     }
     

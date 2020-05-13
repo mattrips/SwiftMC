@@ -34,6 +34,13 @@ class Handshake: Packet {
         requestedProtocol = -1
     }
     
+    init(protocolVersion: Int32, host: String, port: Int16, requestedProtocol: Int32) {
+        self.protocolVersion = protocolVersion
+        self.host = host
+        self.port = port
+        self.requestedProtocol = requestedProtocol
+    }
+    
     func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         self.protocolVersion = buffer.readVarInt() ?? self.protocolVersion
         self.host = buffer.readVarString() ?? self.host

@@ -28,13 +28,15 @@ class GameHandler: PacketHandler {
         // Save channel
         self.channel = channel
         
-        // Handle login
+        // Login to first world
+        if let world = channel.server.worlds.first {
+            channel.setWorld(world: world)
+        } else {
+            disconnect(reason: "No world found on this server!")
+        }
+        
+        // Chat message
         if let loginSuccess = channel.login {
-            // Send login packet (game starts)
-            channel.send(packet: Login(entityId: 1, gameMode: 1, dimension: 0, seed: 0, difficulty: 0, maxPlayers: 1, levelType: "default", viewDistance: 16, reducedDebugInfo: false, normalRespawn: true))
-            channel.send(packet: Position(x: 15, y: 100, z: 15, teleportId: 1))
-            
-            // Chat message
             channel.server.broadcast(packet: Chat(message: ChatMessage(extra: [
                 ChatMessage(text: "[+] ").with(color: .green),
                 ChatMessage(text: loginSuccess.username).with(color: .yellow)
@@ -56,29 +58,64 @@ class GameHandler: PacketHandler {
         }
     }
     
-    func shouldHandle(wrapper: PackerWrapper) -> Bool {
+    func shouldHandle(packet: Packet) -> Bool {
         return !(channel?.closing ?? true)
     }
     
-    func handle(wrapper: PackerWrapper) {
+    func handle(packet: Packet) {
         // Check packet type
-        if let chat = wrapper.packet as? Chat {
+        if let chat = packet as? Chat {
             self.handle(chat: chat)
+        }
+        
+        // Foward packets to world
+        if let channel = channel, let world = channel.world {
+            world.handle(packet: packet, for: channel)
         }
     }
     
     func handle(chat: Chat) {
-        // Create final message
-        let message = ChatMessage(extra: [
-            ChatMessage(text: "\(channel?.login?.username ?? "NULL"): ").with(color: .aqua),
-            ChatMessage(text: chat.message)
-        ])
-        
-        // Send the message to all players
-        channel?.server.broadcast(packet: Chat(message: message))
-        
-        // Print in log the message
-        channel?.server.log(message.toString())
+        if let channel = channel, let login = channel.login {
+            // Check for a command
+            if chat.message.starts(with: "/") {
+                // Log
+                channel.server.log("\(login.username) executed command \(chat.message)")
+                
+                // Handle a command
+                let _ = chat.message.removeFirst()
+                var args = chat.message.split(separator: " ").map {
+                    String($0)
+                }
+                if args.count > 0 {
+                    // Get command name
+                    let name = args.removeFirst().lowercased()
+                    
+                    // Check if command exists
+                    if let command = channel.server.commands[name] {
+                        // Execute
+                        command.execute(sender: channel, args: args)
+                    } else {
+                        // Command not found
+                        channel.send(packet: Chat(message: ChatMessage(text: "Command /\(name) not found").with(color: .red)))
+                    }
+                }
+                
+                // Stop here
+                return
+            }
+            
+            // Create final message
+            let message = ChatMessage(extra: [
+                ChatMessage(text: "\(login.username): ").with(color: .aqua),
+                ChatMessage(text: chat.message)
+            ])
+            
+            // Send the message to all players
+            channel.server.broadcast(packet: Chat(message: message))
+            
+            // Print in log the message
+            channel.server.log(message.toString())
+        }
     }
     
     func disconnect(reason: String) {

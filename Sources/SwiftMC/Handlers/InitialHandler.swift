@@ -32,22 +32,22 @@ class InitialHandler: PacketHandler {
         self.channel = nil
     }
     
-    func shouldHandle(wrapper: PackerWrapper) -> Bool {
+    func shouldHandle(packet: Packet) -> Bool {
         return !(channel?.closing ?? true)
     }
     
-    func handle(wrapper: PackerWrapper) {
+    func handle(packet: Packet) {
         // Check packet type
-        if let pingPacket = wrapper.packet as? PingPacket {
+        if let pingPacket = packet as? PingPacket {
             self.handle(pingPacket: pingPacket)
         }
-        if let handshake = wrapper.packet as? Handshake {
+        if let handshake = packet as? Handshake {
             self.handle(handshake: handshake)
         }
-        if let statusRequest = wrapper.packet as? StatusRequest {
+        if let statusRequest = packet as? StatusRequest {
             self.handle(statusRequest: statusRequest)
         }
-        if let loginRequest = wrapper.packet as? LoginRequest {
+        if let loginRequest = packet as? LoginRequest {
             self.handle(loginRequest: loginRequest)
         }
     }
@@ -63,7 +63,7 @@ class InitialHandler: PacketHandler {
     func handle(handshake: Handshake) {
         if let channel = channel {
             // Save
-            channel.setVersion(version: handshake.protocolVersion)
+            channel.protocolVersion = handshake.protocolVersion
             
             // Remove FML from host
             if handshake.host.contains("\0") {
@@ -81,10 +81,10 @@ class InitialHandler: PacketHandler {
                 
             case 1:
                 // Ping
-                channel.setProtocol(prot: .STATUS)
+                channel.prot = .STATUS
             case 2:
                 // Login
-                channel.setProtocol(prot: .LOGIN)
+                channel.prot = .LOGIN
                 
                 // Check server/client version
                 if !ProtocolConstants.supported_versions_ids.contains(handshake.protocolVersion) {
@@ -103,7 +103,7 @@ class InitialHandler: PacketHandler {
     
     func handle(statusRequest: StatusRequest) {
         // Send packet
-        if let channel = channel, let json = channel.server.getServerInfo(preferedProtocol: channel.decoder.protocolVersion).toJSON() {
+        if let channel = channel, let json = channel.server.getServerInfo(preferedProtocol: channel.protocolVersion).toJSON() {
             channel.send(packet: StatusResponse(response: json))
         }
     }
@@ -135,7 +135,7 @@ class InitialHandler: PacketHandler {
         // Send success packet and switch to game protocol
         channel?.server.log("Authenticating player \(success.username) (\(success.uuid))...")
         channel?.send(packet: success)
-        channel?.setProtocol(prot: .GAME)
+        channel?.prot = .GAME
         channel?.setHandler(handler: GameHandler())
     }
     

@@ -42,6 +42,7 @@ public struct ServerInfo: Codable {
     public var version: ServerVersion?
     public var players: ServerPlayers?
     public var description: ChatMessage?
+    public var favicon: String?
     
     // MARK: - Server version
     

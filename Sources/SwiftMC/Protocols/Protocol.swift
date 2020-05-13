@@ -102,6 +102,9 @@ class Prot {
         to_client.registerPacket(packetClass: LoginSuccess.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x02)
         ])
+        to_client.registerPacket(packetClass: SetCompresion.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x03)
+        ])
         // ...
         to_server.registerPacket(packetClass: LoginRequest.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)

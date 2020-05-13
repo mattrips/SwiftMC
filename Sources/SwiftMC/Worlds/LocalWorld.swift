@@ -18,16 +18,21 @@
 */
 
 import Foundation
-import NIO
 
-public protocol Packet {
+class LocalWorld: WorldProtocol {
     
-    init()
+    func connect(client: ChannelWrapper) {
+        // Send login packet (game starts)
+        client.send(packet: Login(entityId: 1, gameMode: 1, dimension: 0, seed: 0, difficulty: 0, maxPlayers: 1, levelType: "default", viewDistance: 16, reducedDebugInfo: false, normalRespawn: true))
+        client.send(packet: Position(x: 15, y: 100, z: 15, teleportId: 1))
+    }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32)
+    func disconnect(client: ChannelWrapper) {
+        
+    }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32)
-    
-    func toString() -> String
+    func handle(packet: Packet, for client: ChannelWrapper) {
+        
+    }
     
 }

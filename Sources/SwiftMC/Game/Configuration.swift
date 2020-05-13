@@ -24,6 +24,7 @@ public class Configuration {
     public let protocolVersion: Int32
     public let port: Int
     public var motd: ChatMessage?
+    public var favicon: String?
     public var slots: Int = 42
     public var debug: Bool = false
     
@@ -34,6 +35,11 @@ public class Configuration {
     
     public func with(motd: ChatMessage) -> Configuration {
         self.motd = motd
+        return self
+    }
+    
+    public func with(favicon: String) -> Configuration {
+        self.favicon = favicon
         return self
     }
     

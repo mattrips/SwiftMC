@@ -20,11 +20,11 @@
 import Foundation
 import NIO
 
-public final class ClientHandler: ChannelInboundHandler {
+public final class ClientHandler: ChannelInboundHandler, ChannelHandler {
     
     // Requirements
-    public typealias InboundIn = PackerWrapper
-    public typealias OutboundOut = PackerWrapper
+    public typealias InboundIn = Packet
+    public typealias OutboundOut = Packet
     
     // Variables
     let channelWrapper: ChannelWrapper
@@ -39,18 +39,18 @@ public final class ClientHandler: ChannelInboundHandler {
     
     public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         // Read wrapper
-        let wrapper = unwrapInboundIn(data)
+        let packet = unwrapInboundIn(data)
         
         // Check for debug
         if channelWrapper.server.configuration.debug {
-            channelWrapper.server.log("CLIENT -> SERVER: \(wrapper.packet?.toString() ?? "Unkown packet id: \(wrapper.packetId)")")
+            channelWrapper.server.log("CLIENT -> SERVER: \(packet.toString())")
         }
         
         // Handle packet
         if let handler = handler {
-            let sendPacket = handler.shouldHandle(wrapper: wrapper)
+            let sendPacket = handler.shouldHandle(packet: packet)
             if sendPacket {
-                handler.handle(wrapper: wrapper)
+                handler.handle(packet: packet)
             }
         }
     }

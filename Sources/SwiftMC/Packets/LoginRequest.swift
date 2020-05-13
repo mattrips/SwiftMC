@@ -28,6 +28,10 @@ class LoginRequest: Packet {
         data = ""
     }
     
+    init(data: String) {
+        self.data = data
+    }
+    
     func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         data = buffer.readVarString() ?? data
     }
