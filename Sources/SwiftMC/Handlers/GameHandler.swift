@@ -48,14 +48,7 @@ class GameHandler: PacketHandler {
     
     func handle(wrapper: PackerWrapper) {
         // Check packet type
-        if let keepAlive = wrapper.packet as? KeepAlive {
-            self.handle(keepAlive: keepAlive)
-        }
-    }
-    
-    func handle(keepAlive: KeepAlive) {
-        // Send back the packet
-        channel?.send(packet: keepAlive)
+        
     }
     
     func disconnect(reason: String) {

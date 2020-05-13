@@ -59,6 +59,13 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0xAB)
         ])
         // ...
+        to_server.registerPacket(packetClass: KeepAlive.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x0B),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12, packetID: 0x0C),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x0B),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x0F)
+        ])
     }
     static let STATUS = Prot(name: "STATUS") { to_server, to_client in
         to_client.registerPacket(packetClass: StatusResponse.self, mappings: [
