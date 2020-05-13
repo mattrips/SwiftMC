@@ -79,10 +79,10 @@ class Login: Packet {
             viewDistance = buffer.readVarInt() ?? viewDistance
         }
         if protocolVersion >= 29 {
-            reducedDebugInfo = buffer.readBytes(length: 1)?.first == 1
+            reducedDebugInfo = buffer.readBool() ?? reducedDebugInfo
         }
         if protocolVersion >= ProtocolConstants.minecraft_1_15 {
-            normalRespawn = buffer.readBytes(length: 1)?.first == 1
+            normalRespawn = buffer.readBool() ?? normalRespawn
         }
     }
     
@@ -106,10 +106,10 @@ class Login: Packet {
             buffer.writeVarInt(value: viewDistance)
         }
         if protocolVersion >= 29 {
-            buffer.writeBytes([reducedDebugInfo ? 1 : 0])
+            buffer.writeBool(value: reducedDebugInfo)
         }
         if protocolVersion >= ProtocolConstants.minecraft_1_15 {
-            buffer.writeBytes([normalRespawn ? 1 : 0])
+            buffer.writeBool(value: normalRespawn)
         }
     }
     

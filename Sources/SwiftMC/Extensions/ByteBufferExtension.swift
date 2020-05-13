@@ -68,4 +68,55 @@ extension ByteBuffer {
         }
     }
     
+    mutating func readBool() -> Bool? {
+        return readBytes(length: MemoryLayout<Bool>.size)?.withUnsafeBufferPointer {
+            $0.baseAddress!.withMemoryRebound(to: Bool.self, capacity: 1) {
+                $0.pointee
+            }
+        }
+    }
+    
+    mutating func writeBool(value: Bool) {
+        var value = value
+        writeBytes(withUnsafePointer(to: &value) {
+            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Bool>.size) {
+                Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Bool>.size))
+            }
+        })
+    }
+    
+    mutating func readDouble() -> Double? {
+        return readBytes(length: MemoryLayout<Double>.size)?.withUnsafeBufferPointer {
+            $0.baseAddress!.withMemoryRebound(to: Double.self, capacity: 1) {
+                $0.pointee
+            }
+        }
+    }
+    
+    mutating func writeDouble(value: Double) {
+        var value = value
+        writeBytes(withUnsafePointer(to: &value) {
+            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Double>.size) {
+                Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Double>.size))
+            }
+        })
+    }
+    
+    mutating func readFloat() -> Float32? {
+        return readBytes(length: MemoryLayout<Float32>.size)?.withUnsafeBufferPointer {
+            $0.baseAddress!.withMemoryRebound(to: Float32.self, capacity: 1) {
+                $0.pointee
+            }
+        }
+    }
+    
+    mutating func writeFloat(value: Float32) {
+        var value = value
+        writeBytes(withUnsafePointer(to: &value) {
+            $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Float32>.size) {
+                Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Float32>.size))
+            }
+        })
+    }
+    
 }

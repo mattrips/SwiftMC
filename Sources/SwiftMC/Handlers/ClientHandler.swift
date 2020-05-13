@@ -47,6 +47,11 @@ public final class ClientHandler: ChannelInboundHandler {
         // Read wrapper
         let wrapper = unwrapInboundIn(data)
         
+        // Check for debug
+        if channelWrapper.server.configuration.debug {
+            channelWrapper.server.log("CLIENT -> SERVER: \(wrapper.packet?.toString() ?? "Unkown packet id: \(wrapper.packetId)")")
+        }
+        
         // Handle packet
         if let handler = handler {
             let sendPacket = handler.shouldHandle(wrapper: wrapper)

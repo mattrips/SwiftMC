@@ -22,6 +22,7 @@ import NIO
 
 public struct PackerWrapper {
     
+    var packetId: Int32
     var packet: Packet?
     var buffer: ByteBuffer?
     

@@ -64,11 +64,11 @@ class MinecraftDecoder: ByteToMessageDecoder {
             // Check packet type
             if packetID == 0xFE {
                 // Legacy ping
-                context.fireChannelRead(wrapInboundOut(PackerWrapper(packet: LegacyPing(v1_5: buffer.readableBytes > 0 && buffer.readInteger(as: UInt8.self) ?? 0 == 0x01))))
+                context.fireChannelRead(wrapInboundOut(PackerWrapper(packetId: Int32(packetID), packet: LegacyPing(v1_5: buffer.readableBytes > 0 && buffer.readInteger(as: UInt8.self) ?? 0 == 0x01))))
             } else if packetID == 0x02 && buffer.readableBytes > 0 {
                 // Legacy handshake
                 buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
-                context.fireChannelRead(wrapInboundOut(PackerWrapper(packet: LegacyHandshake(), buffer: nil)))
+                context.fireChannelRead(wrapInboundOut(PackerWrapper(packetId: Int32(packetID), packet: LegacyHandshake(), buffer: nil)))
             }
         }
         
@@ -116,12 +116,11 @@ class MinecraftDecoder: ByteToMessageDecoder {
                 if let packet = direction.createPacket(id: packetID, version: protocolVersion) {
                     // Read packet
                     packet.readPacket(from: &buffer, direction: direction, protocolVersion: protocolVersion)
-                    context.fireChannelRead(wrapInboundOut(PackerWrapper(packet: packet, buffer: buffer)))
+                    context.fireChannelRead(wrapInboundOut(PackerWrapper(packetId: packetID, packet: packet, buffer: buffer)))
                 } else {
                     // Skip
                     buffer.moveReaderIndex(forwardBy: buffer.readableBytes)
-                    context.fireChannelRead(wrapInboundOut(PackerWrapper(packet: nil, buffer: buffer)))
-                    print("Received an unknown packet: \(prot.name):\(packetID)")
+                    context.fireChannelRead(wrapInboundOut(PackerWrapper(packetId: packetID, packet: nil, buffer: buffer)))
                 }
             }
         }

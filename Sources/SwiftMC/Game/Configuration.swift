@@ -25,10 +25,26 @@ public class Configuration {
     public let port: Int
     public var name: String = "My server"
     public var slots: Int = 42
+    public var debug: Bool = false
     
     public init(protocolVersion: Int32, port: Int) {
         self.protocolVersion = protocolVersion
         self.port = port
+    }
+    
+    public func with(name: String) -> Configuration {
+        self.name = name
+        return self
+    }
+    
+    public func with(slots: Int) -> Configuration {
+        self.slots = slots
+        return self
+    }
+    
+    public func enable(debug: Bool) -> Configuration {
+        self.debug = debug
+        return self
     }
     
 }

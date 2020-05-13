@@ -35,6 +35,21 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x20),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x21)
         ])
+        to_client.registerPacket(packetClass: Login.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x01),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x23),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x25),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x26)
+        ])
+        // ...
+        to_client.registerPacket(packetClass: Position.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x08),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x2E),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x2F),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x32),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x35),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x36)
+        ])
         // ...
         to_client.registerPacket(packetClass: Kick.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x40),

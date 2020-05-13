@@ -63,6 +63,11 @@ public class ChannelWrapper {
                 self.login = login
             }
             
+            // Check for debug
+            if server.configuration.debug {
+                server.log("SERVER -> CLIENT: \(packet.toString())")
+            }
+            
             // Send packet
             channel.writeAndFlush(packet, promise: nil)
         }

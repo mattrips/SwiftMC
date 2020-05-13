@@ -48,12 +48,10 @@ public class SwiftMC {
         // Start
         log("Starting server...")
         
+        // Start a timer for KeepAlive
+        Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(keepAlive), userInfo: nil, repeats: true)
+        
         // Listen and wait
-        listenAndWait()
-    }
-    
-    // Start listening
-    func listenAndWait() {
         listen()
         do {
             try serverChannel?.closeFuture.wait()
@@ -119,6 +117,13 @@ public class SwiftMC {
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
             .childChannelOption(reuseAddrOpt, value: 1)
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
+    }
+    
+    @objc func keepAlive() {
+        // Send keep alive to connected clients
+        clients.forEach { wrapper in
+            wrapper.send(packet: KeepAlive())
+        }
     }
     
     func log(_ string: String) {
