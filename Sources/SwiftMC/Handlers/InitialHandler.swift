@@ -24,10 +24,6 @@ class InitialHandler: PacketHandler {
     
     var channel: ChannelWrapper?
     
-    func bindChannel(channel: ChannelWrapper?) {
-        self.channel = channel
-    }
-    
     func connected(channel: ChannelWrapper) {
         self.channel = channel
     }

@@ -24,28 +24,36 @@ class GameHandler: PacketHandler {
     
     var channel: ChannelWrapper?
     
-    func bindChannel(channel: ChannelWrapper?) {
+    func connected(channel: ChannelWrapper) {
+        // Save channel
         self.channel = channel
         
-        if let channel = channel, let loginSuccess = channel.login {
+        // Handle login
+        if let loginSuccess = channel.login {
             // Send login packet (game starts)
             channel.send(packet: Login(entityId: 1, gameMode: 1, dimension: 0, seed: 0, difficulty: 0, maxPlayers: 1, levelType: "default", viewDistance: 16, reducedDebugInfo: false, normalRespawn: true))
             channel.send(packet: Position(x: 15, y: 100, z: 15, teleportId: 1))
             
             // Chat message
             channel.server.broadcast(packet: Chat(message: ChatMessage(extra: [
-                ChatMessage(text: "[+] ").with(color: .gold),
+                ChatMessage(text: "[+] ").with(color: .green),
                 ChatMessage(text: loginSuccess.username).with(color: .yellow)
             ])))
         }
     }
     
-    func connected(channel: ChannelWrapper) {
-        self.channel = channel
-    }
-    
     func disconnected(channel: ChannelWrapper) {
+        // Remove channel
         self.channel = nil
+        
+        // Handle logout
+        if let loginSuccess = channel.login {
+            // Send logout packets
+            channel.server.broadcast(packet: Chat(message: ChatMessage(extra: [
+                ChatMessage(text: "[-] ").with(color: .red),
+                ChatMessage(text: loginSuccess.username).with(color: .yellow)
+            ])))
+        }
     }
     
     func shouldHandle(wrapper: PackerWrapper) -> Bool {
@@ -61,14 +69,16 @@ class GameHandler: PacketHandler {
     
     func handle(chat: Chat) {
         // Create final message
-        let message = "\(channel?.login?.username ?? "NULL"): \(chat.message)"
+        let message = ChatMessage(extra: [
+            ChatMessage(text: "\(channel?.login?.username ?? "NULL"): ").with(color: .aqua),
+            ChatMessage(text: chat.message)
+        ])
         
         // Send the message to all players
-        let chatMessage = ChatMessage(text: message)
-        channel?.server.broadcast(packet: Chat(message: chatMessage))
+        channel?.server.broadcast(packet: Chat(message: message))
         
         // Print in log the message
-        channel?.server.log(message)
+        channel?.server.log(message.toString())
     }
     
     func disconnect(reason: String) {

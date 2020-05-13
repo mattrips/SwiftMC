@@ -37,6 +37,13 @@ public class ChatMessage: Codable {
         return nil
     }
     
+    func toString() -> String {
+        if let extra = extra {
+            return extra.map { $0.toString() }.joined()
+        }
+        return text
+    }
+    
     // MARK: - Chat message content
     
     public var extra: [ChatMessage]?

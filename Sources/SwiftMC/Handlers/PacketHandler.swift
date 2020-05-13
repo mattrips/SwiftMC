@@ -22,8 +22,6 @@ import NIO
 
 protocol PacketHandler {
     
-    func bindChannel(channel: ChannelWrapper?)
-    
     func connected(channel: ChannelWrapper)
     
     func disconnected(channel: ChannelWrapper)

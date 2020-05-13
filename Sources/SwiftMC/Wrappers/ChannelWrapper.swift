@@ -50,9 +50,9 @@ public class ChannelWrapper {
     }
     
     func setHandler(handler: PacketHandler) {
-        self.handler?.handler?.bindChannel(channel: nil)
+        self.handler?.handler?.disconnected(channel: self)
         self.handler?.handler = handler
-        self.handler?.handler?.bindChannel(channel: self)
+        self.handler?.handler?.connected(channel: self)
     }
     
     func send(packet: Packet) {
@@ -78,6 +78,7 @@ public class ChannelWrapper {
             // Mark as closed
             closing = true
             closed = true
+            handler?.handler?.disconnected(channel: self)
             
             // Remove from server clients
             server.clients.removeAll(where: { client in
