@@ -27,10 +27,14 @@ public class Configuration {
     public var favicon: String?
     public var slots: Int = 42
     public var debug: Bool = false
+    public var logger: (String) -> ()
     
     public init(protocolVersion: Int32, port: Int) {
         self.protocolVersion = protocolVersion
         self.port = port
+        self.logger = { log in
+            print(log)
+        }
     }
     
     public func with(motd: ChatMessage) -> Configuration {
@@ -45,6 +49,11 @@ public class Configuration {
     
     public func with(slots: Int) -> Configuration {
         self.slots = slots
+        return self
+    }
+    
+    public func with(logger: @escaping (String) -> ()) -> Configuration {
+        self.logger = logger
         return self
     }
     

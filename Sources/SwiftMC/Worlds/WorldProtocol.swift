@@ -27,4 +27,6 @@ public protocol WorldProtocol {
     
     func handle(packet: Packet, for client: ChannelWrapper)
     
+    func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ())
+    
 }

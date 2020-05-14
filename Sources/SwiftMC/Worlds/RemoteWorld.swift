@@ -23,8 +23,8 @@ import NIO
 class RemoteWorld: WorldProtocol {
     
     // Configuration
-    var host: String
-    var port: Int
+    let host: String
+    let port: Int
     
     // Initialize a remote world
     init(host: String, port: Int) {
@@ -34,14 +34,10 @@ class RemoteWorld: WorldProtocol {
     
     // Connect a client
     func connect(client: ChannelWrapper) {
-        // Save data
-        let host = self.host
-        let port = self.port
-        
         // Init the channel
         makeBootstrap(for: client).connect(host: host, port: port).whenSuccess() { channel in
             // Send handshake
-            client.remoteChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: host, port: Int16(port), requestedProtocol: 2))
+            client.remoteChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: self.host, port: Int16(self.port), requestedProtocol: 2))
             
             // Change protocol
             client.remoteChannel?.prot = .LOGIN
@@ -83,6 +79,46 @@ class RemoteWorld: WorldProtocol {
         
         // Foward to client
         client.send(packet: packet)
+    }
+    
+    // Ping server
+    func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
+        // Pning
+        let reuseAddrOpt = ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR)
+        ClientBootstrap(group: client.server.eventLoopGroup)
+            .channelOption(reuseAddrOpt, value: 1)
+            .channelInitializer { channel in
+                // Create objects
+                let decoder = MinecraftDecoder(server: false)
+                let encoder = MinecraftEncoder(server: false)
+                let wrapper = ChannelWrapper(server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
+                
+                // Add client to list
+                client.pingChannel = wrapper
+                
+                // Add then to pipeline
+                return channel.pipeline.addHandlers([
+                    ByteToMessageHandler(decoder),
+                    MessageToByteHandler(encoder),
+                    RemoteWorldPingHandler(channelWrapper: client, completionHandler: completionHandler)
+                ])
+            }
+            .connect(host: host, port: port)
+            .whenComplete { result in
+                if (try? result.get()) != nil {
+                    // Send handshake
+                    client.pingChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: self.host, port: Int16(self.port), requestedProtocol: 1))
+                    
+                    // Change protocol
+                    client.pingChannel?.prot = .STATUS
+                    
+                    // Login request
+                    client.pingChannel?.send(packet: StatusRequest())
+                } else {
+                    // Server not found
+                    completionHandler(nil)
+                }
+            }
     }
     
     // Initialize a client channel
@@ -138,6 +174,42 @@ class RemoteWorld: WorldProtocol {
             // Get remote world
             if let world = channelWrapper.world as? RemoteWorld {
                 world.remoteHandle(packet: packet, for: channelWrapper)
+            }
+        }
+        
+    }
+    
+    class RemoteWorldPingHandler: ChannelInboundHandler, ChannelHandler {
+        
+        // Requirements
+        public typealias InboundIn = Packet
+        public typealias OutboundOut = Packet
+        
+        // Variables
+        let channelWrapper: ChannelWrapper
+        var handler: PacketHandler?
+        var completionHandler: (ServerInfo?) -> ()
+        
+        // Initializer
+        init(channelWrapper: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
+            self.channelWrapper = channelWrapper
+            self.completionHandler = completionHandler
+            self.channelWrapper.pingChannel?.handler = self
+        }
+        
+        // Read a packet from remote world
+        public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+            // Read wrapper
+            let packet = unwrapInboundIn(data)
+            
+            // Check for debug
+            if channelWrapper.server.configuration.debug {
+                channelWrapper.server.log("WORLD -> SERVER: \(packet.toString())")
+            }
+            
+            // Get remote world
+            if let response = packet as? StatusResponse {
+                completionHandler(ServerInfo.decode(from: response.response))
             }
         }
         

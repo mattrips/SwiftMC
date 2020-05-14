@@ -65,7 +65,6 @@ public class SwiftMC {
         
         // Load worlds
         log("Loading worlds...")
-        loadWorld(world: LocalWorld())
         
         // Start a timer for KeepAlive
         eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(1), delay: TimeAmount.seconds(1)) { task in
@@ -149,7 +148,7 @@ public class SwiftMC {
     // Log
     func log(_ string: String) {
         // Allow custom log channels (like remote access)
-        print("[\(Date())] \(string)")
+        configuration.logger("[\(Date())] \(string)")
     }
     
     // Get server infos for ping
@@ -194,6 +193,16 @@ public class SwiftMC {
     public func loadWorld(world: WorldProtocol) {
         worlds.append(world)
         log("Loaded one world!")
+    }
+    
+    // Create a local world
+    public func createLocalWorld() -> WorldProtocol {
+        return LocalWorld()
+    }
+    
+    // Create a remote world
+    public func createRemoteWorld(host: String, port: Int) -> WorldProtocol {
+        return RemoteWorld(host: host, port: port)
     }
     
 }

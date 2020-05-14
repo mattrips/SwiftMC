@@ -35,4 +35,8 @@ class LocalWorld: WorldProtocol {
         
     }
     
+    func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
+        completionHandler(nil)
+    }
+    
 }

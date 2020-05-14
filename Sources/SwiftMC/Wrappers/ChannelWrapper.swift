@@ -41,6 +41,7 @@ public class ChannelWrapper {
     var login: LoginSuccess?
     var world: WorldProtocol?
     var remoteChannel: ChannelWrapper?
+    var pingChannel: ChannelWrapper?
     
     init(server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder, prot: Prot, protocolVersion: Int32) {
         self.server = server
@@ -57,13 +58,6 @@ public class ChannelWrapper {
         self.handler?.handler?.disconnected(channel: self)
         self.handler?.handler = handler
         self.handler?.handler?.connected(channel: self)
-    }
-    
-    func setWorld(world: WorldProtocol) {
-        self.world?.disconnect(client: self)
-        self.remoteChannel = nil
-        self.world = world
-        self.world?.connect(client: self)
     }
     
     func send(packet: Packet) {
@@ -115,6 +109,19 @@ public class ChannelWrapper {
                 let _ = channel.close()
             }
         }
+    }
+    
+    // Adapters for outside
+    
+    public func sendMessage(message: ChatMessage) {
+        self.send(packet: Chat(message: message))
+    }
+    
+    public func setWorld(world: WorldProtocol) {
+        self.world?.disconnect(client: self)
+        self.remoteChannel = nil
+        self.world = world
+        self.world?.connect(client: self)
     }
     
 }

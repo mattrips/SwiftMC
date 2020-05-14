@@ -59,7 +59,12 @@ public struct ServerInfo: Codable {
     public struct ServerPlayers: Codable {
         var max: Int?
         var online: Int?
-        var sample: [String]?
+        var sample: [ServerPlayer]?
+    }
+    
+    public struct ServerPlayer: Codable {
+        var name: String?
+        var id: String?
     }
     
 }
