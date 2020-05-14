@@ -21,22 +21,22 @@ import Foundation
 
 public class HelpCommand: Command {
     
-    public func execute(sender: ChannelWrapper, args: [String]) {
+    public func execute(server: SwiftMC, sender: CommandSender, args: [String]) {
         // Init base message
         let message = ChatMessage(extra: [
             ChatMessage(text: "SwiftMC Server - Developed by Nathan Fallet at Groupe MINASTE").with(color: .aqua)
         ])
         
         // Iterate commands
-        for (name, command) in sender.server.commands {
+        for (name, command) in server.commands {
             message.extra?.append(contentsOf: [
-                ChatMessage(text: "\n/\(name): ").with(color: .gold),
+                ChatMessage(text: "\n$\(name): ").with(color: .gold),
                 ChatMessage(text: command.description()).with(color: .yellow)
             ])
         }
         
         // Print help
-        sender.send(packet: Chat(message: message))
+        sender.sendMessage(message: message)
     }
     
     public func description() -> String {

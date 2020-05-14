@@ -18,11 +18,10 @@
 */
 
 import Foundation
+import NIO
 
-public protocol Command {
+public protocol Player: CommandSender {
     
-    func execute(server: SwiftMC, sender: CommandSender, args: [String])
-    
-    func description() -> String
+    func setWorld(world: WorldProtocol)
     
 }

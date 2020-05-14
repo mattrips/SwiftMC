@@ -20,7 +20,7 @@
 import Foundation
 import NIO
 
-public class ChannelWrapper {
+public class ChannelWrapper: Player {
     
     // Channel related
     var server: SwiftMC
@@ -99,7 +99,7 @@ public class ChannelWrapper {
             
             // Remove from server clients
             server.clients.removeAll(where: { client in
-                client.channel.localAddress == channel.localAddress
+                getName() == client.getName()
             })
             
             // Send close packet if there is one
@@ -113,6 +113,10 @@ public class ChannelWrapper {
     }
     
     // Adapters for outside
+    
+    public func getName() -> String {
+        return login?.username ?? "Player"
+    }
     
     public func sendMessage(message: ChatMessage) {
         self.send(packet: Chat(message: message))

@@ -21,7 +21,18 @@ import Foundation
 
 class LocalWorld: WorldProtocol {
     
+    // Connected clients
+    var clients: [ChannelWrapper]
+    
+    // Initialize
+    init() {
+        self.clients = []
+    }
+    
     func connect(client: ChannelWrapper) {
+        // Add to clients
+        clients.append(client)
+        
         // Login player
         let login = Login(entityId: 1, gameMode: 1, dimension: 0, seed: 0, difficulty: 0, maxPlayers: 1, levelType: "default", viewDistance: 16, reducedDebugInfo: false, normalRespawn: true)
         
@@ -50,11 +61,29 @@ class LocalWorld: WorldProtocol {
     }
     
     func disconnect(client: ChannelWrapper) {
-        
+        // Remove client from current clients
+        clients.removeAll(where: { current in
+            current.getName() == client.getName()
+        })
     }
     
     func handle(packet: Packet, for client: ChannelWrapper) {
-        
+        // Check packet type
+        if let chat = packet as? Chat {
+            handle(chat: chat, for: client)
+        }
+    }
+    
+    func handle(chat: Chat, for client: ChannelWrapper) {
+        // Fire PlayerChatEvent
+        let event = PlayerChatEvent(player: client, message: ChatMessage(text: chat.message))
+        client.server.fireListeners(for: event)
+        clients.forEach { current in
+            current.sendMessage(message: ChatMessage(extra: [
+                ChatMessage(text: "\(client.getName()): ").with(color: .aqua),
+                event.message
+            ]))
+        }
     }
     
     func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {

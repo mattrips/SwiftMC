@@ -35,12 +35,14 @@ class GameHandler: PacketHandler {
             disconnect(reason: "No world found on this server!")
         }
         
-        // Chat message
         if let loginSuccess = channel.login {
-            channel.server.broadcast(packet: Chat(message: ChatMessage(extra: [
+            // Fire PlayerJoinEvent
+            let event = PlayerJoinEvent(player: channel, message: ChatMessage(extra: [
                 ChatMessage(text: "[+] ").with(color: .green),
                 ChatMessage(text: loginSuccess.username).with(color: .yellow)
-            ])))
+            ]))
+            channel.server.fireListeners(for: event)
+            channel.server.broadcast(packet: Chat(message: event.message))
         }
     }
     
@@ -50,11 +52,13 @@ class GameHandler: PacketHandler {
         
         // Handle logout
         if let loginSuccess = channel.login {
-            // Send logout packets
-            channel.server.broadcast(packet: Chat(message: ChatMessage(extra: [
+            // Fire PlayerQuitEvent
+            let event = PlayerQuitEvent(player: channel, message: ChatMessage(extra: [
                 ChatMessage(text: "[-] ").with(color: .red),
                 ChatMessage(text: loginSuccess.username).with(color: .yellow)
-            ])))
+            ]))
+            channel.server.fireListeners(for: event)
+            channel.server.broadcast(packet: Chat(message: event.message))
         }
         
         // Foward to remote world
@@ -82,41 +86,13 @@ class GameHandler: PacketHandler {
     }
     
     func handle(chat: Chat) -> Bool {
-        if let channel = channel, let login = channel.login {
+        if let channel = channel {
             // Check for a command
-            if chat.message.starts(with: "/") {
-                // Log
-                channel.server.log("\(login.username) executed command \(chat.message)")
-                
-                // Handle a command
-                let command = chat.message.suffix(chat.message.count - 1)
-                var args = command.split(separator: " ").map {
-                    String($0)
-                }
-                if args.count > 0 {
-                    // Get command name
-                    let name = args.removeFirst().lowercased()
-                    
-                    // Check if command exists
-                    if let command = channel.server.commands[name] {
-                        // Execute
-                        command.execute(sender: channel, args: args)
-                        return true
-                    }/* else {
-                        // Command not found
-                        channel.send(packet: Chat(message: ChatMessage(text: "Command /\(name) not found").with(color: .red)))
-                    }*/
-                }
+            if chat.message.starts(with: "$") {
+                // Handle the command
+                channel.server.dispatchCommand(sender: channel, command: String(chat.message.suffix(chat.message.count - 1)))
+                return true
             }
-            
-            // Create final message
-            let message = ChatMessage(extra: [
-                ChatMessage(text: "\(login.username): ").with(color: .aqua),
-                ChatMessage(text: chat.message)
-            ])
-            
-            // Send the message to all players
-            channel.server.broadcast(packet: Chat(message: message))
         }
         return false
     }

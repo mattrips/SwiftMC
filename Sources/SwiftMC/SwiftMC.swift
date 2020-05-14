@@ -21,7 +21,7 @@ import Foundation
 import NIO
 
 // Main class
-public class SwiftMC {
+public class SwiftMC: CommandSender {
     
     // Server configuration
     let configuration: Configuration
@@ -30,6 +30,9 @@ public class SwiftMC {
     
     // Commands
     var commands: [String: Command]
+    
+    // Event listeners
+    var listeners: [EventListener]
     
     // Worlds
     var worlds: [WorldProtocol]
@@ -49,6 +52,7 @@ public class SwiftMC {
         self.configuration = configuration
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         self.commands = [:]
+        self.listeners = []
         self.worlds = []
         self.clients = []
     }
@@ -180,7 +184,14 @@ public class SwiftMC {
         
         // Check for a chat message to log it
         if let chat = packet as? Chat, let message = ChatMessage.decode(from: chat.message) {
-            log(message.toString())
+            sendMessage(message: message)
+        }
+    }
+    
+    // Call listeners
+    func fireListeners(for event: Event) {
+        for listener in listeners {
+            event.call(listener: listener)
         }
     }
     
@@ -191,7 +202,29 @@ public class SwiftMC {
             return
         }
         commands[name] = command
-        log("Registered command /\(name)")
+        log("Registered command $\(name)")
+    }
+    
+    // Get name of a command sender
+    public func getName() -> String {
+        return "Server"
+    }
+    
+    // Send a message to the server
+    public func sendMessage(message: ChatMessage) {
+        log(message.toString())
+    }
+    
+    // Unregister a command
+    public func unregisterCommand(_ name: String) {
+        let name = name.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: " "))
+        commands.removeValue(forKey: name)
+        log("Unregistered command $\(name)")
+    }
+    
+    // Register a listener
+    public func registerListener(listener: EventListener) {
+        listeners.append(listener)
     }
     
     // Load a world
@@ -208,6 +241,30 @@ public class SwiftMC {
     // Create a remote world
     public func createRemoteWorld(host: String, port: Int) -> WorldProtocol {
         return RemoteWorld(host: host, port: port)
+    }
+    
+    // Dispatch a command
+    public func dispatchCommand(sender: CommandSender, command: String) {
+        // Log
+        log("\(sender.getName()) executed command $\(command)")
+        
+        // Get args
+        var args = command.split(separator: " ").map {
+            String($0)
+        }
+        if args.count > 0 {
+            // Get command name
+            let name = args.removeFirst().lowercased()
+            
+            // Check if command exists
+            if let command = commands[name] {
+                // Execute
+                command.execute(server: self, sender: sender, args: args)
+            } else {
+                // Command not found
+                sender.sendMessage(message: ChatMessage(text: "Command $\(name) not found").with(color: .red))
+            }
+        }
     }
     
 }

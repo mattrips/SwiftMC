@@ -18,11 +18,10 @@
 */
 
 import Foundation
+import NIO
 
-public protocol Command {
+public protocol Event {
     
-    func execute(server: SwiftMC, sender: CommandSender, args: [String])
-    
-    func description() -> String
+    func call(listener: EventListener)
     
 }

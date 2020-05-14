@@ -94,6 +94,7 @@ class RemoteWorld: WorldProtocol {
             // Reconnect to default server, if not self
             if let main = client.server.worlds.first/*, main != self*/ {
                 client.setWorld(world: main)
+                client.sendMessage(message: ChatMessage(text: "Disconnected: \(kick.message)").with(color: .red))
                 return
             }
         }

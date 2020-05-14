@@ -18,11 +18,12 @@
 */
 
 import Foundation
+import NIO
 
-public protocol Command {
+public protocol CommandSender {
     
-    func execute(server: SwiftMC, sender: CommandSender, args: [String])
+    func getName() -> String
     
-    func description() -> String
+    func sendMessage(message: ChatMessage)
     
 }

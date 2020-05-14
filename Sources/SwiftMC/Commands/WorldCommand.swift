@@ -21,25 +21,30 @@ import Foundation
 
 public class WorldCommand: Command {
     
-    public func execute(sender: ChannelWrapper, args: [String]) {
-        if args.count == 1 {
-            // Get world index
-            if let index = Int(args[0]) {
-                // Get world
-                if index < sender.server.worlds.count {
-                    // Connect to the world
-                    sender.setWorld(world: sender.server.worlds[index])
+    public func execute(server: SwiftMC, sender: CommandSender, args: [String]) {
+        if let player = sender as? Player {
+            if args.count == 1 {
+                // Get world index
+                if let index = Int(args[0]) {
+                    // Get world
+                    if index < server.worlds.count {
+                        // Connect to the world
+                        player.setWorld(world: server.worlds[index])
+                    } else {
+                        // Error message
+                        sender.sendMessage(message: ChatMessage(text: "Index is too big!").with(color: .red))
+                    }
                 } else {
                     // Error message
-                    sender.send(packet: Chat(message: ChatMessage(text: "Index is too big!").with(color: .red)))
+                    sender.sendMessage(message: ChatMessage(text: "\"\(args[0])\" is not a number!").with(color: .red))
                 }
             } else {
                 // Error message
-                sender.send(packet: Chat(message: ChatMessage(text: "\"\(args[0])\" is not a number!").with(color: .red)))
+                sender.sendMessage(message: ChatMessage(text: "Usage: $world <id>").with(color: .red))
             }
         } else {
             // Error message
-            sender.send(packet: Chat(message: ChatMessage(text: "Usage: /world <id>").with(color: .red)))
+            sender.sendMessage(message: ChatMessage(text: "Only players can use this command!"))
         }
     }
     

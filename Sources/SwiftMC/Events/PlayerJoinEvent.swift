@@ -18,11 +18,20 @@
 */
 
 import Foundation
+import NIO
 
-public protocol Command {
+public class PlayerJoinEvent: Event {
     
-    func execute(server: SwiftMC, sender: CommandSender, args: [String])
+    public let player: Player
+    public var message: ChatMessage
     
-    func description() -> String
+    init(player: Player, message: ChatMessage) {
+        self.player = player
+        self.message = message
+    }
+    
+    public func call(listener: EventListener) {
+        listener.onPlayerJoin(event: self)
+    }
     
 }

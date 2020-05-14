@@ -18,11 +18,14 @@
 */
 
 import Foundation
+import NIO
 
-public protocol Command {
+open class EventListener {
     
-    func execute(server: SwiftMC, sender: CommandSender, args: [String])
+    public init() {}
     
-    func description() -> String
+    open func onPlayerJoin(event: PlayerJoinEvent) {}
+    open func onPlayerQuit(event: PlayerQuitEvent) {}
+    open func onPlayerChat(event: PlayerChatEvent) {}
     
 }
