@@ -142,7 +142,6 @@ public class SwiftMC {
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
             .childChannelOption(reuseAddrOpt, value: 1)
-            .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
     }
     
     // Log
