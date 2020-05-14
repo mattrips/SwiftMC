@@ -114,7 +114,7 @@ class Login: Packet {
     }
     
     func toString() -> String {
-        return "Login()"
+        return "Login(entityId: \(entityId), gameMode: \(gameMode), dimension: \(dimension), seed: \(seed), difficulty: \(difficulty), maxPlayers: \(maxPlayers), levelType: \(levelType), viewDistance: \(viewDistance), reducedDebugInfo: \(reducedDebugInfo), normalRespawn: \(normalRespawn))"
     }
     
 }

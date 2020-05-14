@@ -37,8 +37,8 @@ class MinecraftEncoder: MessageToByteEncoder {
     
     func encode(data: Packet, out: inout ByteBuffer) throws {
         // Init a temporary buffer
-        var buffer1 = ByteBuffer(ByteBufferView())
-        var buffer2 = ByteBuffer(ByteBufferView())
+        var buffer1 = ByteBufferAllocator().buffer(capacity: 64*1024*1024)
+        var buffer2 = ByteBufferAllocator().buffer(capacity: 64*1024*1024)
         
         // Packet encoder
         try packetEncoder(data: data, out: &buffer1)
@@ -76,9 +76,15 @@ class MinecraftEncoder: MessageToByteEncoder {
     // Packet encoder
     func packetEncoder(data: Packet, out: inout ByteBuffer) throws {
         // Get direction
-        if let channel = channel, let direction = server ? channel.prot.to_client : channel.prot.to_server, let id = direction.getId(for: type(of: data), version: channel.protocolVersion) {
-            // Write packet id
-            out.writeVarInt(value: id)
+        if let channel = channel, let direction = server ? channel.prot.to_client : channel.prot.to_server {
+            // Get packet id
+            if let id = direction.getId(for: type(of: data), version: channel.protocolVersion) {
+                // Write packet id
+                out.writeVarInt(value: id)
+            } else if let unknownPacket = data as? UnknownPacket {
+                // Write packet id
+                out.writeVarInt(value: unknownPacket.packetId)
+            }
             
             // And write packet content
             data.writePacket(to: &out, direction: direction, protocolVersion: channel.protocolVersion)

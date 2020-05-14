@@ -54,7 +54,7 @@ class RemoteWorld: WorldProtocol {
     // Disconnect a client
     func disconnect(client: ChannelWrapper) {
         // Disconnect from the remote world
-        
+        client.remoteChannel?.close()
     }
     
     // Handle a packet from the client

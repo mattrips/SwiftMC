@@ -37,32 +37,38 @@ class MinecraftDecoder: ByteToMessageDecoder {
     
     // Decode wrapper
     func decode(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState {
-        // Copy buffer
-        var newBuffer = buffer
-        
-        // Legacy decoder
-        try legacyDecoder(context: context, buffer: &newBuffer)
+        if channel?.prot.name == "HANDSHAKE" {
+            // Legacy decoder
+            try legacyDecoder(context: context, buffer: &buffer)
+        }
         
         // Frame decoder
-        if let result = try frameDecoder(context: context, buffer: &newBuffer) {
-            return result
+        let readerIndex = buffer.readerIndex
+        guard buffer.readableBytes > 0, let size = buffer.readVarInt(), buffer.readableBytes >= size else {
+            buffer.moveReaderIndex(to: readerIndex)
+            return .needMoreData
         }
+        
+        // Create a buffer with specified size
+        var limitedBuffer = ByteBufferAllocator().buffer(capacity: 64*1024*1024)
+        limitedBuffer.writeBytes(buffer.readBytes(length: Int(size)) ?? [])
         
         // Decompress if needed
         if let threshold = channel?.threshold, threshold != -1 {
             // Move buffer
-            var oldBuffer = newBuffer.slice()
-            newBuffer = ByteBuffer(ByteBufferView())
+            var newBuffer = ByteBufferAllocator().buffer(capacity: 64*1024*1024)
             
             // Handle
-            try thresholdEncoder(oldBuffer: &oldBuffer, newBuffer: &newBuffer)
+            try thresholdDecoder(oldBuffer: &limitedBuffer, newBuffer: &newBuffer)
+            
+            // And decode packet
+            try packetDecoder(context: context, buffer: &newBuffer)
+        } else {
+            // Classic packet decoder
+            try packetDecoder(context: context, buffer: &limitedBuffer)
         }
         
-        // Packet decoder
-        try packetDecoder(context: context, buffer: &newBuffer)
-        
         // Move index
-        buffer.moveReaderIndex(to: newBuffer.readerIndex)
         return .continue
     }
     
@@ -88,38 +94,8 @@ class MinecraftDecoder: ByteToMessageDecoder {
         buffer.moveReaderIndex(to: readerIndex)
     }
     
-    // Frame decoder
-    func frameDecoder(context: ChannelHandlerContext, buffer: inout ByteBuffer) throws -> DecodingState? {
-        // Save reader index
-        let readerIndex = buffer.readerIndex
-        var buf: [UInt8] = [0, 0, 0]
-        for i in 0 ..< buf.count {
-            // Check readability
-            if buffer.readableBytes == 0 {
-                buffer.moveReaderIndex(to: readerIndex)
-                return .needMoreData
-            }
-            
-            // Read byte
-            buf[i] = buffer.readBytes(length: 1)?.first ?? 0
-            if buf[i] >= 0 {
-                var temp = ByteBuffer(ByteBufferView(buf))
-                let length = temp.readInteger(as: Int32.self) ?? 0
-                if length == 0 {
-                    return nil
-                }
-                if buffer.readableBytes < Int(length) {
-                    buffer.moveReaderIndex(to: readerIndex)
-                } else {
-                    buffer.moveReaderIndex(forwardBy: Int(length))
-                }
-            }
-        }
-        return nil
-    }
-    
     // Threshold
-    func thresholdEncoder(oldBuffer: inout ByteBuffer, newBuffer: inout ByteBuffer) throws {
+    func thresholdDecoder(oldBuffer: inout ByteBuffer, newBuffer: inout ByteBuffer) throws {
         // Read size
         let size = oldBuffer.readVarInt()
         if size == 0 {

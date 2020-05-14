@@ -56,6 +56,11 @@ class GameHandler: PacketHandler {
                 ChatMessage(text: loginSuccess.username).with(color: .yellow)
             ])))
         }
+        
+        // Foward to remote world
+        if let world = channel.world {
+            world.disconnect(client: channel)
+        }
     }
     
     func shouldHandle(packet: Packet) -> Bool {

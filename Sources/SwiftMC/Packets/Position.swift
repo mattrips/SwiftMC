@@ -51,7 +51,15 @@ class Position: Packet {
     }
     
     func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        
+        x = buffer.readDouble() ?? x
+        y = buffer.readDouble() ?? y
+        z = buffer.readDouble() ?? z
+        yaw = buffer.readFloat() ?? yaw
+        pitch = buffer.readFloat() ?? pitch
+        flags = buffer.readBytes(length: 1)?.first ?? flags
+        if protocolVersion >= ProtocolConstants.minecraft_1_9 {
+            teleportId = buffer.readVarInt() ?? teleportId
+        }
     }
     
     func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
@@ -61,11 +69,13 @@ class Position: Packet {
         buffer.writeFloat(value: yaw)
         buffer.writeFloat(value: pitch)
         buffer.writeBytes([flags])
-        buffer.writeVarInt(value: teleportId)
+        if protocolVersion >= ProtocolConstants.minecraft_1_9 {
+            buffer.writeVarInt(value: teleportId)
+        }
     }
     
     func toString() -> String {
-        return "Position(x: \(x), y: \(y), z: \(z), yaw: \(yaw), pitch: \(pitch))"
+        return "Position(x: \(x), y: \(y), z: \(z), yaw: \(yaw), pitch: \(pitch), teleportId: \(teleportId))"
     }
     
 }

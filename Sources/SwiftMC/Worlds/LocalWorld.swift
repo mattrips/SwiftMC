@@ -24,7 +24,7 @@ class LocalWorld: WorldProtocol {
     func connect(client: ChannelWrapper) {
         // Send login packet (game starts)
         client.send(packet: Login(entityId: 1, gameMode: 1, dimension: 0, seed: 0, difficulty: 0, maxPlayers: 1, levelType: "default", viewDistance: 16, reducedDebugInfo: false, normalRespawn: true))
-        client.send(packet: Position(x: 15, y: 100, z: 15, teleportId: 1))
+        //client.send(packet: Position(x: 15, y: 100, z: 15, teleportId: 1))
     }
     
     func disconnect(client: ChannelWrapper) {

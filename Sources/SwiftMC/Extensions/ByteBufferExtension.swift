@@ -69,7 +69,7 @@ extension ByteBuffer {
     }
     
     mutating func readBool() -> Bool? {
-        return readBytes(length: MemoryLayout<Bool>.size)?.withUnsafeBufferPointer {
+        return readBytes(length: MemoryLayout<Bool>.size)?.reversed().withUnsafeBufferPointer {
             $0.baseAddress!.withMemoryRebound(to: Bool.self, capacity: 1) {
                 $0.pointee
             }
@@ -82,11 +82,11 @@ extension ByteBuffer {
             $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Bool>.size) {
                 Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Bool>.size))
             }
-        })
+        }.reversed())
     }
     
     mutating func readDouble() -> Double? {
-        return readBytes(length: MemoryLayout<Double>.size)?.withUnsafeBufferPointer {
+        return readBytes(length: MemoryLayout<Double>.size)?.reversed().withUnsafeBufferPointer {
             $0.baseAddress!.withMemoryRebound(to: Double.self, capacity: 1) {
                 $0.pointee
             }
@@ -99,11 +99,11 @@ extension ByteBuffer {
             $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Double>.size) {
                 Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Double>.size))
             }
-        })
+        }.reversed())
     }
     
     mutating func readFloat() -> Float32? {
-        return readBytes(length: MemoryLayout<Float32>.size)?.withUnsafeBufferPointer {
+        return readBytes(length: MemoryLayout<Float32>.size)?.reversed().withUnsafeBufferPointer {
             $0.baseAddress!.withMemoryRebound(to: Float32.self, capacity: 1) {
                 $0.pointee
             }
@@ -116,7 +116,7 @@ extension ByteBuffer {
             $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Float32>.size) {
                 Array(UnsafeBufferPointer(start: $0, count: MemoryLayout<Float32>.size))
             }
-        })
+        }.reversed())
     }
     
 }

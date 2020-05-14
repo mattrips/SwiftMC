@@ -28,6 +28,10 @@ class SetCompresion: Packet {
         threshold = 0
     }
     
+    init(threshold: Int32) {
+        self.threshold = threshold
+    }
+    
     func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         self.threshold = buffer.readVarInt() ?? self.threshold
     }

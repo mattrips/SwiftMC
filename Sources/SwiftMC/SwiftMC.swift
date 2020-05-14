@@ -65,11 +65,11 @@ public class SwiftMC {
         
         // Load worlds
         log("Loading worlds...")
-        //loadWorld(world: RemoteWorld(host: "192.168.5.51", port: 25566))
+        loadWorld(world: RemoteWorld(host: "192.168.5.51", port: 25566))
         loadWorld(world: LocalWorld())
         
         // Start a timer for KeepAlive
-        eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(10), delay: TimeAmount.seconds(10)) { task in
+        eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(1), delay: TimeAmount.seconds(1)) { task in
             // Send keep alive to connected clients
             self.players.filter { player in
                 player.remoteChannel == nil
