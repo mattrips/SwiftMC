@@ -70,7 +70,9 @@ class GameHandler: PacketHandler {
     func handle(packet: Packet) {
         // Check packet type
         if let chat = packet as? Chat {
-            self.handle(chat: chat)
+            if self.handle(chat: chat) {
+                return
+            }
         }
         
         // Foward packets to world
@@ -79,7 +81,7 @@ class GameHandler: PacketHandler {
         }
     }
     
-    func handle(chat: Chat) {
+    func handle(chat: Chat) -> Bool {
         if let channel = channel, let login = channel.login {
             // Check for a command
             if chat.message.starts(with: "/") {
@@ -87,8 +89,8 @@ class GameHandler: PacketHandler {
                 channel.server.log("\(login.username) executed command \(chat.message)")
                 
                 // Handle a command
-                let _ = chat.message.removeFirst()
-                var args = chat.message.split(separator: " ").map {
+                let command = chat.message.suffix(chat.message.count - 1)
+                var args = command.split(separator: " ").map {
                     String($0)
                 }
                 if args.count > 0 {
@@ -99,14 +101,12 @@ class GameHandler: PacketHandler {
                     if let command = channel.server.commands[name] {
                         // Execute
                         command.execute(sender: channel, args: args)
-                    } else {
+                        return true
+                    }/* else {
                         // Command not found
                         channel.send(packet: Chat(message: ChatMessage(text: "Command /\(name) not found").with(color: .red)))
-                    }
+                    }*/
                 }
-                
-                // Stop here
-                return
             }
             
             // Create final message
@@ -121,6 +121,7 @@ class GameHandler: PacketHandler {
             // Print in log the message
             channel.server.log(message.toString())
         }
+        return false
     }
     
     func disconnect(reason: String) {

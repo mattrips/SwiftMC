@@ -37,6 +37,7 @@ public class ChannelWrapper {
     var prot: Prot
     
     // Player related
+    var receivedLogin: Bool = false
     var login: LoginSuccess?
     var world: WorldProtocol?
     var remoteChannel: ChannelWrapper?
@@ -71,6 +72,13 @@ public class ChannelWrapper {
             if let login = packet as? LoginSuccess {
                 // Save user login
                 self.login = login
+            }
+            if packet as? Login != nil {
+                if receivedLogin {
+                    // Don't send again
+                    return
+                }
+                receivedLogin = true
             }
             
             // Check for debug

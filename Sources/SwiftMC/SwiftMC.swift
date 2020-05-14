@@ -65,7 +65,6 @@ public class SwiftMC {
         
         // Load worlds
         log("Loading worlds...")
-        loadWorld(world: RemoteWorld(host: "192.168.5.51", port: 25566))
         loadWorld(world: LocalWorld())
         
         // Start a timer for KeepAlive
