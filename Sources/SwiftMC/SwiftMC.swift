@@ -174,8 +174,14 @@ public class SwiftMC {
     
     // Broadcast a packet to all players
     func broadcast(packet: Packet) {
+        // Send to all players
         players.forEach { player in
             player.send(packet: packet)
+        }
+        
+        // Check for a chat message to log it
+        if let chat = packet as? Chat, let message = ChatMessage.decode(from: chat.message) {
+            log(message.toString())
         }
     }
     

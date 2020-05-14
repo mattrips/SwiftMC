@@ -38,6 +38,7 @@ public class ChannelWrapper {
     
     // Player related
     var receivedLogin: Bool = false
+    var lastDimmension: Int32?
     var login: LoginSuccess?
     var world: WorldProtocol?
     var remoteChannel: ChannelWrapper?

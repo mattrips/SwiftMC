@@ -57,7 +57,7 @@ class InitialHandler: PacketHandler {
         channel?.send(packet: pingPacket)
         
         // And disconnect
-        disconnect(reason: "")
+        channel?.close()
     }
     
     func handle(handshake: Handshake) {
@@ -125,9 +125,9 @@ class InitialHandler: PacketHandler {
             
 
             // Get UUID
-            // TODO: Generate from name instead of random
-            if let uuid = UUID(uuidString: "98345225-e8b0-3c54-a3e1-b044edc1e0e8") {
-                finish(success: LoginSuccess(uuid: uuid.uuidString.lowercased(), username: loginRequest.data))
+            if let uuid = loginRequest.data.getUUID() {
+                // End login
+                finish(success: LoginSuccess(uuid: uuid, username: loginRequest.data))
             }
         }
     }
@@ -138,7 +138,7 @@ class InitialHandler: PacketHandler {
         channel?.threshold = 256
         
         // Send success packet and switch to game protocol
-        channel?.server.log("Authenticating player \(success.username) (\(success.uuid))...")
+        channel?.server.log("Authenticating player \(success.username)... (\(success.uuid))")
         channel?.send(packet: success)
         channel?.prot = .GAME
         channel?.setHandler(handler: GameHandler())

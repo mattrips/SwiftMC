@@ -117,9 +117,6 @@ class GameHandler: PacketHandler {
             
             // Send the message to all players
             channel.server.broadcast(packet: Chat(message: message))
-            
-            // Print in log the message
-            channel.server.log(message.toString())
         }
         return false
     }

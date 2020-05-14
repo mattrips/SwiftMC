@@ -22,8 +22,30 @@ import Foundation
 class LocalWorld: WorldProtocol {
     
     func connect(client: ChannelWrapper) {
-        // Send login packet (game starts)
-        client.send(packet: Login(entityId: 1, gameMode: 1, dimension: 0, seed: 0, difficulty: 0, maxPlayers: 1, levelType: "default", viewDistance: 16, reducedDebugInfo: false, normalRespawn: true))
+        // Login player
+        let login = Login(entityId: 1, gameMode: 1, dimension: 0, seed: 0, difficulty: 0, maxPlayers: 1, levelType: "default", viewDistance: 16, reducedDebugInfo: false, normalRespawn: true)
+        
+        // Check if a login was already handled
+        if !client.receivedLogin {
+            // Just send login
+            client.send(packet: login)
+        } else {
+            // Send an immediate respawn if required
+            if client.protocolVersion >= ProtocolConstants.minecraft_1_15 {
+                client.send(packet: GameState(reason: GameState.immediate_respawn, value: login.normalRespawn ? 0 : 1))
+            }
+            
+            // Convert to respawn packet
+            if client.lastDimmension == login.dimension {
+                client.send(packet: Respawn(dimension: login.dimension >= 0 ? -1 : 0, hashedSeed: login.seed, difficulty: login.difficulty, gameMode: login.gameMode, levelType: login.levelType))
+            }
+            client.send(packet: Respawn(dimension: login.dimension, hashedSeed: login.seed, difficulty: login.difficulty, gameMode: login.gameMode, levelType: login.levelType))
+        }
+        
+        // Save current dimension
+        client.lastDimmension = login.dimension
+        
+        // Send position
         client.send(packet: Position(x: 15, y: 100, z: 15, teleportId: 1))
     }
     

@@ -76,6 +76,27 @@ class RemoteWorld: WorldProtocol {
             client.remoteChannel?.prot = .GAME
             return
         }
+        if let login = packet as? Login, client.receivedLogin {
+            // Send an immediate respawn if required
+            if client.protocolVersion >= ProtocolConstants.minecraft_1_15 {
+                client.send(packet: GameState(reason: GameState.immediate_respawn, value: login.normalRespawn ? 0 : 1))
+            }
+            
+            // Convert to respawn packet
+            if client.lastDimmension == login.dimension {
+                client.send(packet: Respawn(dimension: login.dimension >= 0 ? -1 : 0, hashedSeed: login.seed, difficulty: login.difficulty, gameMode: login.gameMode, levelType: login.levelType))
+            }
+            client.send(packet: Respawn(dimension: login.dimension, hashedSeed: login.seed, difficulty: login.difficulty, gameMode: login.gameMode, levelType: login.levelType))
+            client.lastDimmension = login.dimension
+            return
+        }
+        if let kick = packet as? Kick {
+            // Reconnect to default server, if not self
+            if let main = client.server.worlds.first/*, main != self*/ {
+                client.setWorld(world: main)
+                return
+            }
+        }
         
         // Foward to client
         client.send(packet: packet)
