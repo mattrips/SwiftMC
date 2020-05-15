@@ -146,7 +146,7 @@ class RemoteWorld: WorldProtocol {
     }
     
     func getName() -> String {
-        return "remote_\(host)_\(port)"
+        return "\(host):\(port)"
     }
     
     // Get a new session id

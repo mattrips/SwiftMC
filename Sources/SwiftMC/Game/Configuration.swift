@@ -21,8 +21,8 @@ import Foundation
 
 open class Configuration {
     
-    public let protocolVersion: Int32
-    public let port: Int
+    public var protocolVersion: Int32
+    public var port: Int
     public var motd: String?
     public var favicon: String?
     public var slots: Int = 42
