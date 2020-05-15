@@ -23,24 +23,32 @@ public class WorldCommand: Command {
     
     public func execute(server: SwiftMC, sender: CommandSender, args: [String]) {
         if let player = sender as? Player {
-            if args.count == 1 {
-                // Get world index
-                if let index = Int(args[0]) {
-                    // Get world
-                    if index < server.worlds.count {
-                        // Connect to the world
-                        player.goTo(world: server.worlds[index])
+            if args.count == 2 {
+                // Get world type
+                var type: WorldType?
+                if args[0].lowercased() == WorldType.local.rawValue {
+                    type = .local
+                } else if args[0].lowercased() == WorldType.remote.rawValue {
+                    type = .remote
+                }
+                if let type = type {
+                    // Get world by name
+                    if let world = server.worlds.filter({ world in
+                        return world.getType() == type && world.getName().lowercased() == args[1].lowercased()
+                    }).first {
+                        // Go to this world
+                        player.goTo(world: world)
                     } else {
                         // Error message
-                        sender.sendMessage(message: ChatColor.red + "Index is too big!")
+                        sender.sendMessage(message: ChatColor.red + "This world doesn't exist!")
                     }
                 } else {
                     // Error message
-                    sender.sendMessage(message: ChatColor.red + "\"\(args[0])\" is not a number!")
+                    sender.sendMessage(message: ChatColor.red + "\"\(args[0])\" is not a correct world type! Try local or remote.")
                 }
             } else {
                 // Error message
-                sender.sendMessage(message: ChatColor.red + "Usage: /world <id>")
+                sender.sendMessage(message: ChatColor.red + "Usage: /world <local/remote> <name>")
             }
         } else {
             // Error message

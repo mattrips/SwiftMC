@@ -19,18 +19,8 @@
 
 import Foundation
 
-public protocol WorldProtocol {
+public enum WorldType: String {
     
-    func connect(client: ChannelWrapper)
-    
-    func disconnect(client: ChannelWrapper)
-    
-    func handle(packet: Packet, for client: ChannelWrapper)
-    
-    func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ())
-    
-    func getName() -> String
-    
-    func getType() -> WorldType
+    case local, remote
     
 }

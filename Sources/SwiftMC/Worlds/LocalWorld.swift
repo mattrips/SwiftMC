@@ -73,7 +73,7 @@ class LocalWorld: WorldProtocol {
     
     func disconnect(client: ChannelWrapper) {
         // Fire PlayerQuitEvent
-        let event = PlayerQuitEvent(player: client, message: "\(ChatColor.red)[+] \(ChatColor.yellow)\(client.getName())")
+        let event = PlayerQuitEvent(player: client, message: "\(ChatColor.red)[-] \(ChatColor.yellow)\(client.getName())")
         client.server.fireListeners(for: event)
         broadcast(packet: Chat(message: ChatMessage(text: event.message)))
         
@@ -105,12 +105,8 @@ class LocalWorld: WorldProtocol {
         return name
     }
     
-    func isLocal() -> Bool {
-        return true
-    }
-    
-    func isRemote() -> Bool {
-        return false
+    func getType() -> WorldType {
+        return .local
     }
     
     func broadcast(packet: Packet) {

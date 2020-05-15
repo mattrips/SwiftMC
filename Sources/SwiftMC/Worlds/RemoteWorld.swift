@@ -149,12 +149,8 @@ class RemoteWorld: WorldProtocol {
         return "\(host):\(port)"
     }
     
-    func isLocal() -> Bool {
-        return false
-    }
-    
-    func isRemote() -> Bool {
-        return true
+    func getType() -> WorldType {
+        return .remote
     }
     
     // Get a new session id
