@@ -19,7 +19,7 @@
 
 import Foundation
 
-public class Configuration {
+open class Configuration {
     
     public let protocolVersion: Int32
     public let port: Int

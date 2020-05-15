@@ -82,13 +82,7 @@ class GameHandler: PacketHandler {
     
     func disconnect(reason: String) {
         channel?.server.log("Client disconnected: \(reason)")
-        if let json = try? JSONSerialization.data(withJSONObject: ["text": reason], options: []), let string = String(bytes: json, encoding: .utf8) {
-            // Send kick packet
-            channel?.close(packet: Kick(message: string))
-        } else {
-            // Just close
-            channel?.close()
-        }
+        channel?.kick(reason: reason)
     }
     
 }

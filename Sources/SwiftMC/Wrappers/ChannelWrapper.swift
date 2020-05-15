@@ -135,4 +135,12 @@ public class ChannelWrapper: Player {
         self.world?.connect(client: self)
     }
     
+    public func kick(reason: String) {
+        if let json = ChatMessage(text: reason).toJSON() {
+            close(packet: Kick(message: json))
+        } else {
+            close()
+        }
+    }
+    
 }

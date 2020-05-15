@@ -23,22 +23,8 @@ import NIO
 // Main class
 public class SwiftMC: CommandSender {
     
-    // Server configuration
+    // Publics vars
     public let configuration: Configuration
-    internal let eventLoopGroup: EventLoopGroup
-    internal var serverChannel: Channel?
-    
-    // Commands
-    internal var commands: [String: Command]
-    
-    // Event listeners
-    internal var listeners: [EventListener]
-    
-    // Worlds
-    internal var worlds: [WorldProtocol]
-    
-    // Client handling
-    internal var clients: [ChannelWrapper]
     public var players: [Player] {
         get {
             return clients.filter { client in
@@ -46,6 +32,20 @@ public class SwiftMC: CommandSender {
             }
         }
     }
+    public var isRunning: Bool {
+        get {
+            return running
+        }
+    }
+    
+    // Internal vars
+    internal var running: Bool = false
+    internal let eventLoopGroup: EventLoopGroup
+    internal var serverChannel: Channel?
+    internal var commands: [String: Command]
+    internal var listeners: [EventListener]
+    internal var worlds: [WorldProtocol]
+    internal var clients: [ChannelWrapper]
 
     // Initializer
     public init(configuration: Configuration) {
@@ -61,10 +61,13 @@ public class SwiftMC: CommandSender {
     public func start() {
         // Start
         log("Starting server...")
+        running = true
         
         // Register basic commands
         log("Registering server commands...")
+        registerCommand("stop", command: StopCommand())
         registerCommand("help", command: HelpCommand())
+        registerCommand("chat", command: ChatCommand())
         registerCommand("world", command: WorldCommand())
         
         // Load worlds
@@ -85,17 +88,6 @@ public class SwiftMC: CommandSender {
             }
         }
         
-        // Listen and wait
-        listen()
-        do {
-            try serverChannel?.closeFuture.wait()
-        } catch {
-            logError("ERROR: Failed to wait on server: \(error)")
-        }
-    }
-
-    // Listen
-    func listen() {
         // Create server bootstrap
         let bootstrap = makeBootstrap()
         do {
@@ -120,6 +112,24 @@ public class SwiftMC: CommandSender {
             // Error starting server
             logError("ERROR: failed to start server: \(type(of: error))\(error)")
         }
+        
+        // Wait
+        do {
+            try serverChannel?.closeFuture.wait()
+            running = false
+        } catch {
+            logError("ERROR: Failed to wait on server: \(error)")
+        }
+    }
+
+    // Stop
+    func stop() {
+        players.forEach { player in
+            player.kick(reason: "Server closed")
+        }
+        serverChannel?.close().whenComplete({ _ in
+            self.log("Stopping server...")
+        })
     }
     
     // Initialize server channels
@@ -278,6 +288,7 @@ public class SwiftMC: CommandSender {
     }
     
     // Dispatch a command
+    @discardableResult
     public func dispatchCommand(sender: CommandSender, command: String, showError: Bool = true) -> Bool {
         // Log
         log("\(sender.getName()) executed command /\(command)")
@@ -301,6 +312,11 @@ public class SwiftMC: CommandSender {
             }
         }
         return false
+    }
+    
+    @discardableResult
+    public func dispatchCommand(command: String, showError: Bool = true) -> Bool {
+        dispatchCommand(sender: self, command: command, showError: showError)
     }
     
 }

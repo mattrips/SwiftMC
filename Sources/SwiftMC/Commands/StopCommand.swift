@@ -18,14 +18,16 @@
 */
 
 import Foundation
-import NIO
 
-public protocol Player: CommandSender {
+public class StopCommand: Command {
     
-    func getUUID() -> String
+    public func execute(server: SwiftMC, sender: CommandSender, args: [String]) {
+        // Stop the server
+        server.stop()
+    }
     
-    func goTo(world: WorldProtocol)
-    
-    func kick(reason: String)
+    public func description() -> String {
+        return "Stop the server"
+    }
     
 }
