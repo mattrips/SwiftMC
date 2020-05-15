@@ -19,7 +19,7 @@
 
 import Foundation
 
-public class ChatColor: CustomStringConvertible {
+public class ChatColor: CustomStringConvertible, Equatable {
     
     public static let black = ChatColor("0", id: "black", ansi: 30)
     public static let dark_blue = ChatColor("1", id: "dark_blue", ansi: 34)
@@ -59,9 +59,9 @@ public class ChatColor: CustomStringConvertible {
         return lhs.description + rhs.description
     }
     
-    internal var char: Character
-    internal var id: String
-    internal var ansi: Int
+    public let char: Character
+    public let id: String
+    public let ansi: Int
     
     internal init(_ char: Character, id: String, ansi: Int) {
         self.char = char
@@ -75,6 +75,10 @@ public class ChatColor: CustomStringConvertible {
     
     public func toAnsi() -> String {
         return "\u{001B}[\(ansi)m"
+    }
+    
+    public static func == (lhs: ChatColor, rhs: ChatColor) -> Bool {
+        return lhs.id == rhs.id
     }
     
 }
