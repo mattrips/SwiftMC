@@ -23,11 +23,13 @@ import NIO
 public class PlayerChatEvent: Event {
     
     public let player: Player
-    public var message: ChatMessage
+    public var message: String
+    public var format: String
     
-    init(player: Player, message: ChatMessage) {
+    init(player: Player, message: String, format: String) {
         self.player = player
         self.message = message
+        self.format = format
     }
     
     public func call(listener: EventListener) {

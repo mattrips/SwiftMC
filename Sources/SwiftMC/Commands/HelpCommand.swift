@@ -23,20 +23,15 @@ public class HelpCommand: Command {
     
     public func execute(server: SwiftMC, sender: CommandSender, args: [String]) {
         // Init base message
-        let message = ChatMessage(extra: [
-            ChatMessage(text: "SwiftMC Server - Developed by Nathan Fallet at Groupe MINASTE").with(color: .aqua)
-        ])
+        var message = ChatColor.aqua + "SwiftMC Server - Developed by Nathan Fallet at Groupe MINASTE"
         
         // Iterate commands
         for (name, command) in server.commands {
-            message.extra?.append(contentsOf: [
-                ChatMessage(text: "\n$\(name): ").with(color: .gold),
-                ChatMessage(text: command.description()).with(color: .yellow)
-            ])
+            message.append("\n\(ChatColor.gold)/\(name): \(ChatColor.yellow)\(command.description())")
         }
         
         // Print help
-        sender.sendMessage(message: message)
+        sender.sendMessage(message: ChatMessage(text: message))
     }
     
     public func description() -> String {

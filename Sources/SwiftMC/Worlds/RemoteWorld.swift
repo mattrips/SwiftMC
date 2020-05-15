@@ -23,11 +23,13 @@ import NIO
 class RemoteWorld: WorldProtocol {
     
     // Configuration
+    let server: SwiftMC
     let host: String
     let port: Int
     
     // Initialize a remote world
-    init(host: String, port: Int) {
+    init(server: SwiftMC, host: String, port: Int) {
+        self.server = server
         self.host = host
         self.port = port
     }
@@ -93,8 +95,8 @@ class RemoteWorld: WorldProtocol {
         if let kick = packet as? Kick {
             // Reconnect to default server, if not self
             if let main = client.server.worlds.first/*, main != self*/ {
-                client.setWorld(world: main)
-                client.sendMessage(message: ChatMessage(text: "Disconnected: \(kick.message)").with(color: .red))
+                client.goTo(world: main)
+                client.sendMessage(message: ChatColor.red + "Disconnected: \(ChatMessage.decode(from: kick.message)?.toString() ?? "No reason")")
                 return
             }
         }
@@ -113,7 +115,7 @@ class RemoteWorld: WorldProtocol {
                 // Create objects
                 let decoder = MinecraftDecoder(server: false)
                 let encoder = MinecraftEncoder(server: false)
-                let wrapper = ChannelWrapper(server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
+                let wrapper = ChannelWrapper(session: self.generateSession(), server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
                 
                 // Add client to list
                 client.pingChannel = wrapper
@@ -143,6 +145,15 @@ class RemoteWorld: WorldProtocol {
             }
     }
     
+    func getName() -> String {
+        return "remote_\(host)_\(port)"
+    }
+    
+    // Get a new session id
+    func generateSession() -> String {
+        return UUID().uuidString.lowercased()
+    }
+    
     // Initialize a client channel
     func makeBootstrap(for client: ChannelWrapper) -> ClientBootstrap {
         let reuseAddrOpt = ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR)
@@ -152,7 +163,7 @@ class RemoteWorld: WorldProtocol {
                 // Create objects
                 let decoder = MinecraftDecoder(server: false)
                 let encoder = MinecraftEncoder(server: false)
-                let wrapper = ChannelWrapper(server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
+                let wrapper = ChannelWrapper(session: self.generateSession(), server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
                 
                 // Add client to list
                 client.remoteChannel = wrapper

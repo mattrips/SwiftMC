@@ -23,6 +23,7 @@ import NIO
 public class ChannelWrapper: Player {
     
     // Channel related
+    var session: String
     var server: SwiftMC
     var channel: Channel
     var handler: ChannelHandler?
@@ -44,7 +45,8 @@ public class ChannelWrapper: Player {
     var remoteChannel: ChannelWrapper?
     var pingChannel: ChannelWrapper?
     
-    init(server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder, prot: Prot, protocolVersion: Int32) {
+    init(session: String, server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder, prot: Prot, protocolVersion: Int32) {
+        self.session = session
         self.server = server
         self.channel = channel
         self.decoder = decoder
@@ -99,7 +101,7 @@ public class ChannelWrapper: Player {
             
             // Remove from server clients
             server.clients.removeAll(where: { client in
-                getName() == client.getName()
+                session == client.session
             })
             
             // Send close packet if there is one
@@ -118,11 +120,15 @@ public class ChannelWrapper: Player {
         return login?.username ?? "Player"
     }
     
+    public func getUUID() -> String {
+        return login?.uuid ?? "NULL"
+    }
+    
     public func sendMessage(message: ChatMessage) {
         self.send(packet: Chat(message: message))
     }
     
-    public func setWorld(world: WorldProtocol) {
+    public func goTo(world: WorldProtocol) {
         self.world?.disconnect(client: self)
         self.remoteChannel = nil
         self.world = world

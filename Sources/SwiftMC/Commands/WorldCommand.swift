@@ -29,22 +29,22 @@ public class WorldCommand: Command {
                     // Get world
                     if index < server.worlds.count {
                         // Connect to the world
-                        player.setWorld(world: server.worlds[index])
+                        player.goTo(world: server.worlds[index])
                     } else {
                         // Error message
-                        sender.sendMessage(message: ChatMessage(text: "Index is too big!").with(color: .red))
+                        sender.sendMessage(message: ChatColor.red + "Index is too big!")
                     }
                 } else {
                     // Error message
-                    sender.sendMessage(message: ChatMessage(text: "\"\(args[0])\" is not a number!").with(color: .red))
+                    sender.sendMessage(message: ChatColor.red + "\"\(args[0])\" is not a number!")
                 }
             } else {
                 // Error message
-                sender.sendMessage(message: ChatMessage(text: "Usage: $world <id>").with(color: .red))
+                sender.sendMessage(message: ChatColor.red + "Usage: /world <id>")
             }
         } else {
             // Error message
-            sender.sendMessage(message: ChatMessage(text: "Only players can use this command!"))
+            sender.sendMessage(message: ChatColor.red + "Only players can use this command!")
         }
     }
     

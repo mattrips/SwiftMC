@@ -37,31 +37,182 @@ public class ChatMessage: Codable {
         return nil
     }
     
-    func toString() -> String {
-        if let extra = extra {
-            return extra.map { $0.toString() }.joined()
-        }
-        return text
-    }
-    
     // MARK: - Chat message content
     
-    public var extra: [ChatMessage]?
-    public var text: String
-    public var color: String?
+    private var text: String
+    private var extra: [ChatMessage]?
+    private var parent: ChatMessage?
+    private var color: String?
+    private var bold: Bool?
+    private var italic: Bool?
+    private var underlined: Bool?
+    private var strikethrough: Bool?
+    private var obfuscated: Bool?
     
-    public init(text: String) {
-        self.text = text
+    enum CodingKeys: String, CodingKey {
+        case text, extra, color, bold, italic, underlined, strikethrough, obfuscated
     }
     
-    public init(extra: [ChatMessage]) {
-        self.extra = extra
+    public init() {
         self.text = ""
     }
     
-    public func with(color: ChatColor) -> ChatMessage {
-        self.color = color.id
+    public init(text: String) {
+        // Init extras and some other properties
+        self.text = ""
+        var builder = ""
+        var component = ChatMessage()
+        var i = 0
+        
+        // Iterate text to create extra if needed
+        while i < text.count {
+            var char = text[text.index(text.startIndex, offsetBy: i)]
+            if char == ChatColor.color_char {
+                i += 1
+                if i >= text.count {
+                    break
+                }
+                char = text[text.index(text.startIndex, offsetBy: i)]
+                if ("ABCDEFGHIJKLMNOPQRSTUVWXYZ").contains(char) {
+                    char = char.lowercased().first!
+                }
+                guard let format = ChatColor.all.filter({ $0.char == char }).first else {
+                    i += 1
+                    continue
+                }
+                if builder.count > 0 {
+                    let old = component
+                    component = ChatMessage(from: old)
+                    old.text = builder
+                    builder = ""
+                    add(extra: old)
+                }
+                component = component.with(format: format)
+                i += 1
+                continue
+            }
+            builder.append(char)
+            i += 1
+        }
+        component.text = builder
+        
+        // Check component count
+        if let extra = extra, !extra.isEmpty {
+            // Add what left
+            add(extra: component)
+        } else {
+            // Set left text
+            copyFormatting(from: component)
+            self.text = component.text
+        }
+    }
+    
+    public init(from component: ChatMessage) {
+        self.text = component.text
+        copyFormatting(from: component)
+        if let extra = extra {
+            for e in extra {
+                add(extra: e.duplicate())
+            }
+        }
+    }
+    
+    public init(extra: [ChatMessage]) {
+        // Just init from extras
+        self.text = ""
+        self.extra = extra
+        self.extra?.forEach { message in
+            message.parent = self
+        }
+    }
+    
+    public func with(format: ChatColor) -> ChatMessage {
+        if ChatColor.colors.contains(where: { $0.id == format.id }) {
+            self.color = format.id
+        }
+        if format.id == ChatColor.bold.id {
+            self.bold = true
+        }
+        if format.id == ChatColor.italic.id {
+            self.italic = true
+        }
+        if format.id == ChatColor.underline.id {
+            self.underlined = true
+        }
+        if format.id == ChatColor.strikethrough.id {
+            self.strikethrough = true
+        }
+        if format.id == ChatColor.magic.id {
+            self.obfuscated = true
+        }
+        if format.id == ChatColor.reset.id {
+            self.color = ChatColor.white.id
+        }
         return self
+    }
+    
+    public func add(extra: ChatMessage) {
+        if self.extra == nil {
+            self.extra = []
+        }
+        extra.parent = self
+        self.extra?.append(extra)
+    }
+    
+    public func duplicate() -> ChatMessage {
+        return ChatMessage(from: self)
+    }
+    
+    public func copyFormatting(from component: ChatMessage, replace: Bool = true) {
+        // Events
+        // TODO
+        
+        // Formatting
+        if replace || color == nil {
+            color = component.color
+        }
+        if replace || bold == nil {
+            bold = component.bold
+        }
+        if replace || italic == nil {
+            italic = component.italic
+        }
+        if replace || underlined == nil {
+            underlined = component.underlined
+        }
+        if replace || strikethrough == nil {
+            strikethrough = component.strikethrough
+        }
+        if replace || obfuscated == nil {
+            obfuscated = component.obfuscated
+        }
+    }
+    
+    public func getColor() -> ChatColor {
+        for color in ChatColor.colors {
+            if self.color == color.id {
+                return color
+            }
+        }
+        return parent?.getColor() ?? .white
+    }
+    
+    public func toString(useAnsi: Bool = false) -> String {
+        // Add format
+        var string = ""
+        string += useAnsi ? getColor().toAnsi() : getColor().description
+        
+        // Read extra
+        if let extra = extra, !extra.isEmpty {
+            // Add extras
+            string += extra.map { $0.toString(useAnsi: useAnsi) }.joined()
+        } else {
+            // Just add the text
+            string += text
+        }
+        
+        // Return the final result
+        return string
     }
     
 }

@@ -22,6 +22,8 @@ import NIO
 
 public protocol Player: CommandSender {
     
-    func setWorld(world: WorldProtocol)
+    func getUUID() -> String
+    
+    func goTo(world: WorldProtocol)
     
 }

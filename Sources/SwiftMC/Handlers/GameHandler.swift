@@ -30,36 +30,16 @@ class GameHandler: PacketHandler {
         
         // Login to first world
         if let world = channel.server.worlds.first {
-            channel.setWorld(world: world)
+            channel.goTo(world: world)
         } else {
             disconnect(reason: "No world found on this server!")
-        }
-        
-        if let loginSuccess = channel.login {
-            // Fire PlayerJoinEvent
-            let event = PlayerJoinEvent(player: channel, message: ChatMessage(extra: [
-                ChatMessage(text: "[+] ").with(color: .green),
-                ChatMessage(text: loginSuccess.username).with(color: .yellow)
-            ]))
-            channel.server.fireListeners(for: event)
-            channel.server.broadcast(packet: Chat(message: event.message))
+            return
         }
     }
     
     func disconnected(channel: ChannelWrapper) {
         // Remove channel
         self.channel = nil
-        
-        // Handle logout
-        if let loginSuccess = channel.login {
-            // Fire PlayerQuitEvent
-            let event = PlayerQuitEvent(player: channel, message: ChatMessage(extra: [
-                ChatMessage(text: "[-] ").with(color: .red),
-                ChatMessage(text: loginSuccess.username).with(color: .yellow)
-            ]))
-            channel.server.fireListeners(for: event)
-            channel.server.broadcast(packet: Chat(message: event.message))
-        }
         
         // Foward to remote world
         if let world = channel.world {
@@ -88,10 +68,13 @@ class GameHandler: PacketHandler {
     func handle(chat: Chat) -> Bool {
         if let channel = channel {
             // Check for a command
-            if chat.message.starts(with: "$") {
+            if chat.message.starts(with: "/") {
                 // Handle the command
-                channel.server.dispatchCommand(sender: channel, command: String(chat.message.suffix(chat.message.count - 1)))
-                return true
+                let follow = channel.world as? RemoteWorld != nil
+                if channel.server.dispatchCommand(sender: channel, command: String(chat.message.suffix(chat.message.count - 1)), showError: !follow) {
+                    return true
+                }
+                return !follow
             }
         }
         return false

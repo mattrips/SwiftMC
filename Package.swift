@@ -10,11 +10,15 @@ let package = Package(
         .library(
             name: "SwiftMC",
             targets: ["SwiftMC"]),
+        .executable(
+            name: "SwiftMCRun",
+            targets: ["SwiftMCRun"])
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
-        .package(url: "https://github.com/adam-fowler/compress-nio.git", from: "0.0.1")
+        .package(url: "https://github.com/adam-fowler/compress-nio.git", from: "0.0.1"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "0.0.1")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -24,6 +28,12 @@ let package = Package(
             dependencies: [
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "CompressNIO", package: "compress-nio")
+            ]),
+        .target(
+            name: "SwiftMCRun",
+            dependencies: [
+                "SwiftMC",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]),
         .testTarget(
             name: "SwiftMCTests",

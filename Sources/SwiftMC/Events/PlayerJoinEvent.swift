@@ -23,9 +23,9 @@ import NIO
 public class PlayerJoinEvent: Event {
     
     public let player: Player
-    public var message: ChatMessage
+    public var message: String
     
-    init(player: Player, message: ChatMessage) {
+    init(player: Player, message: String) {
         self.player = player
         self.message = message
     }

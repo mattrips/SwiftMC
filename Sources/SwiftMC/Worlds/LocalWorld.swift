@@ -21,11 +21,17 @@ import Foundation
 
 class LocalWorld: WorldProtocol {
     
+    // Configuration
+    let server: SwiftMC
+    let name: String
+    
     // Connected clients
     var clients: [ChannelWrapper]
     
-    // Initialize
-    init() {
+    // Initialize a remote world
+    init(server: SwiftMC, name: String) {
+        self.server = server
+        self.name = name
         self.clients = []
     }
     
@@ -58,12 +64,22 @@ class LocalWorld: WorldProtocol {
         
         // Send position
         client.send(packet: Position(x: 15, y: 100, z: 15, teleportId: 1))
+        
+        // Fire PlayerJoinEvent
+        let event = PlayerJoinEvent(player: client, message: "\(ChatColor.green)[+] \(ChatColor.yellow)\(client.getName())")
+        client.server.fireListeners(for: event)
+        broadcast(packet: Chat(message: ChatMessage(text: event.message)))
     }
     
     func disconnect(client: ChannelWrapper) {
+        // Fire PlayerQuitEvent
+        let event = PlayerQuitEvent(player: client, message: "\(ChatColor.red)[+] \(ChatColor.yellow)\(client.getName())")
+        client.server.fireListeners(for: event)
+        broadcast(packet: Chat(message: ChatMessage(text: event.message)))
+        
         // Remove client from current clients
         clients.removeAll(where: { current in
-            current.getName() == client.getName()
+            current.session == client.session
         })
     }
     
@@ -76,18 +92,29 @@ class LocalWorld: WorldProtocol {
     
     func handle(chat: Chat, for client: ChannelWrapper) {
         // Fire PlayerChatEvent
-        let event = PlayerChatEvent(player: client, message: ChatMessage(text: chat.message))
+        let event = PlayerChatEvent(player: client, message: chat.message, format: "\(ChatColor.aqua)[%@] \(ChatColor.reset)%@")
         client.server.fireListeners(for: event)
-        clients.forEach { current in
-            current.sendMessage(message: ChatMessage(extra: [
-                ChatMessage(text: "\(client.getName()): ").with(color: .aqua),
-                event.message
-            ]))
-        }
+        broadcast(packet: Chat(message: ChatMessage(text: String(format: event.format, client.getName(), event.message))))
     }
     
     func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
         completionHandler(nil)
+    }
+    
+    func getName() -> String {
+        return name
+    }
+    
+    func broadcast(packet: Packet) {
+        // Send to all players
+        clients.forEach { client in
+            client.send(packet: packet)
+        }
+        
+        // Check for a chat message to log it
+        if let chat = packet as? Chat, let message = ChatMessage.decode(from: chat.message) {
+            server.sendMessage(message: "[WORLD: \(getName())] \(message.toString())")
+        }
     }
     
 }

@@ -27,3 +27,11 @@ public protocol CommandSender {
     func sendMessage(message: ChatMessage)
     
 }
+
+extension CommandSender {
+    
+    public func sendMessage(message: String) {
+        self.sendMessage(message: ChatMessage(text: message))
+    }
+    
+}

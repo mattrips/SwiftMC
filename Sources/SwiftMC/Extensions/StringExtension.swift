@@ -73,5 +73,17 @@ extension String {
         }
         return nil
     }
+    
+    public static func + (lhs: String, rhs: ChatColor) -> String {
+        return lhs + rhs.description
+    }
+    
+    public static func + (lhs: ChatColor, rhs: String) -> String {
+        return lhs.description + rhs
+    }
+    
+    public static func += (lhs: inout String, rhs: ChatColor) {
+        lhs += rhs.description
+    }
 
 }
