@@ -27,6 +27,7 @@ public class PlayerConnectEvent: Event {
     
     init(player: Player, world: WorldProtocol?) {
         self.player = player
+        self.world = world
     }
     
     public func call(listener: EventListener) {
