@@ -31,4 +31,8 @@ public protocol WorldProtocol {
     
     func getName() -> String
     
+    func isLocal() -> Bool
+    
+    func isRemote() -> Bool
+    
 }

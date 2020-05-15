@@ -105,6 +105,14 @@ class LocalWorld: WorldProtocol {
         return name
     }
     
+    func isLocal() -> Bool {
+        return true
+    }
+    
+    func isRemote() -> Bool {
+        return false
+    }
+    
     func broadcast(packet: Packet) {
         // Send to all players
         clients.forEach { client in

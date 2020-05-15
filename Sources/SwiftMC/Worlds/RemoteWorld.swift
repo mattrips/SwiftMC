@@ -149,6 +149,14 @@ class RemoteWorld: WorldProtocol {
         return "\(host):\(port)"
     }
     
+    func isLocal() -> Bool {
+        return false
+    }
+    
+    func isRemote() -> Bool {
+        return true
+    }
+    
     // Get a new session id
     func generateSession() -> String {
         return UUID().uuidString.lowercased()
