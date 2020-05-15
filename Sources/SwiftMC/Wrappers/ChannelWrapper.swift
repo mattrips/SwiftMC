@@ -104,6 +104,10 @@ public class ChannelWrapper: Player {
                 session == client.session
             })
             
+            // Fire PlayerDisconnectEvent
+            let event = PlayerDisconnectEvent(player: self)
+            server.fireListeners(for: event)
+            
             // Send close packet if there is one
             if let packet = packet {
                 let _ = channel.writeAndFlush(packet).and(channel.close())

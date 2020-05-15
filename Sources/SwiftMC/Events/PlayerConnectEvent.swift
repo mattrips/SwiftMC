@@ -20,14 +20,17 @@
 import Foundation
 import NIO
 
-open class EventListener {
+public class PlayerConnectEvent: Event {
     
-    public init() {}
+    public let player: Player
+    public var world: WorldProtocol?
     
-    open func onPlayerConnect(event: PlayerConnectEvent) {}
-    open func onPlayerDisconnect(event: PlayerDisconnectEvent) {}
-    open func onPlayerJoin(event: PlayerJoinEvent) {}
-    open func onPlayerQuit(event: PlayerQuitEvent) {}
-    open func onPlayerChat(event: PlayerChatEvent) {}
+    init(player: Player, world: WorldProtocol?) {
+        self.player = player
+    }
+    
+    public func call(listener: EventListener) {
+        listener.onPlayerConnect(event: self)
+    }
     
 }

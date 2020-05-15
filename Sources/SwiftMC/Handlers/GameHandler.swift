@@ -28,8 +28,12 @@ class GameHandler: PacketHandler {
         // Save channel
         self.channel = channel
         
-        // Login to first world
-        if let world = channel.server.worlds.first {
+        // Fire PlayerConnectEvent
+        let event = PlayerConnectEvent(player: channel, world: channel.server.worlds.first)
+        channel.server.fireListeners(for: event)
+        
+        // Login to the selected world
+        if let world = event.world {
             channel.goTo(world: world)
         } else {
             disconnect(reason: "No world found on this server!")
@@ -81,7 +85,6 @@ class GameHandler: PacketHandler {
     }
     
     func disconnect(reason: String) {
-        channel?.server.log("Client disconnected: \(reason)")
         channel?.kick(reason: reason)
     }
     

@@ -44,8 +44,8 @@ public class SwiftMC: CommandSender {
     internal var serverChannel: Channel?
     internal var commands: [String: Command]
     internal var listeners: [EventListener]
-    internal var worlds: [WorldProtocol]
     internal var clients: [ChannelWrapper]
+    public internal(set) var worlds: [WorldProtocol]
 
     // Initializer
     public init(configuration: Configuration) {
