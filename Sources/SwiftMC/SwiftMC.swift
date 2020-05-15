@@ -122,8 +122,8 @@ public class SwiftMC: CommandSender {
         }
     }
 
-    // Stop
-    func stop() {
+    // Stop server
+    public func stop() {
         players.forEach { player in
             player.kick(reason: "Server closed")
         }
