@@ -203,7 +203,7 @@ public class SwiftMC: CommandSender {
                 online: players.count,
                 sample: []
             ),
-            description: configuration.motd ?? ChatMessage(text: "A SwiftMC server"),
+            description: ChatMessage(text: configuration.motd ?? "A SwiftMC server"),
             favicon: configuration.favicon
         )
     }

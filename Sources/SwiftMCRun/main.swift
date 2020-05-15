@@ -39,7 +39,7 @@ struct Server: ParsableCommand {
             let server = SwiftMC(configuration:
                 Configuration(protocolVersion: version, port: port ?? 25565)
                     .with(slots: slots ?? 42)
-                    .with(motd: ChatMessage(text: motd ?? "A SwiftMC Server"))
+                    .with(motd: motd ?? "A SwiftMC Server")
             )
             
             // Add a default world
