@@ -159,6 +159,14 @@ public class ChatMessage: Codable {
         self.extra?.append(extra)
     }
     
+    public func getExtra() -> [ChatMessage]? {
+        return extra ?? []
+    }
+    
+    public func getText() -> String {
+        return text
+    }
+    
     public func duplicate() -> ChatMessage {
         return ChatMessage(from: self)
     }
