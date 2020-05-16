@@ -33,7 +33,7 @@ let package = Package(
             name: "SwiftMCRun",
             dependencies: [
                 "SwiftMC",
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
             ]),
         .testTarget(
             name: "SwiftMCTests",

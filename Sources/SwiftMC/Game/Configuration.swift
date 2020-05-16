@@ -23,6 +23,7 @@ open class Configuration {
     
     public var protocolVersion: Int32
     public var port: Int
+    public var online: Bool = true
     public var motd: String?
     public var favicon: String?
     public var slots: Int = 42
@@ -35,6 +36,11 @@ open class Configuration {
         self.logger = { log in
             print(log.toString(useAnsi: true))
         }
+    }
+    
+    public func with(online: Bool) -> Configuration {
+        self.online = online
+        return self
     }
     
     public func with(motd: String) -> Configuration {

@@ -25,6 +25,8 @@ public class SwiftMC: CommandSender {
     
     // Publics vars
     public let configuration: Configuration
+    public let port: Int
+    public let online: Bool
     public var players: [Player] {
         get {
             return clients.filter { client in
@@ -49,6 +51,8 @@ public class SwiftMC: CommandSender {
 
     // Initializer
     public init(configuration: Configuration) {
+        self.port = configuration.port
+        self.online = configuration.online
         self.configuration = configuration
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         self.commands = [:]
