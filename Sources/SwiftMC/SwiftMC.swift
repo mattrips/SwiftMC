@@ -274,7 +274,7 @@ public class SwiftMC: CommandSender {
     // Load a world
     public func loadWorld(world: WorldProtocol) {
         worlds.append(world)
-        log("Loaded one world!")
+        log("Loaded world: \(world.getType()):\(world.getName())")
     }
     
     // Create a local world

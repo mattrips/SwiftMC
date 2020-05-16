@@ -36,16 +36,19 @@ class RemoteWorld: WorldProtocol {
     
     // Connect a client
     func connect(client: ChannelWrapper) {
-        // Init the channel
-        makeBootstrap(for: client).connect(host: host, port: port).whenSuccess() { channel in
-            // Send handshake
-            client.remoteChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: self.host, port: Int16(self.port), requestedProtocol: 2))
-            
-            // Change protocol
-            client.remoteChannel?.prot = .LOGIN
-            
-            // Login request
-            client.remoteChannel?.send(packet: LoginRequest(data: client.login?.username ?? "Player"))
+        // Get address
+        if let address = getAddress() {
+            // Init the channel
+            makeBootstrap(for: client).connect(to: address).whenSuccess() { channel in
+                // Send handshake
+                client.remoteChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: self.host, port: Int16(self.port), requestedProtocol: 2))
+                
+                // Change protocol
+                client.remoteChannel?.prot = .LOGIN
+                
+                // Login request
+                client.remoteChannel?.send(packet: LoginRequest(data: client.login?.username ?? "Player"))
+            }
         }
     }
     
@@ -107,42 +110,45 @@ class RemoteWorld: WorldProtocol {
     
     // Ping server
     func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
-        // Pning
-        let reuseAddrOpt = ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR)
-        ClientBootstrap(group: client.server.eventLoopGroup)
-            .channelOption(reuseAddrOpt, value: 1)
-            .channelInitializer { channel in
-                // Create objects
-                let decoder = MinecraftDecoder(server: false)
-                let encoder = MinecraftEncoder(server: false)
-                let wrapper = ChannelWrapper(session: self.generateSession(), server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
-                
-                // Add client to list
-                client.pingChannel = wrapper
-                
-                // Add then to pipeline
-                return channel.pipeline.addHandlers([
-                    ByteToMessageHandler(decoder),
-                    MessageToByteHandler(encoder),
-                    RemoteWorldPingHandler(channelWrapper: client, completionHandler: completionHandler)
-                ])
-            }
-            .connect(host: host, port: port)
-            .whenComplete { result in
-                if (try? result.get()) != nil {
-                    // Send handshake
-                    client.pingChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: self.host, port: Int16(self.port), requestedProtocol: 1))
+        // Get address
+        if let address = getAddress() {
+            // Ping
+            let reuseAddrOpt = ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR)
+            ClientBootstrap(group: client.server.eventLoopGroup)
+                .channelOption(reuseAddrOpt, value: 1)
+                .channelInitializer { channel in
+                    // Create objects
+                    let decoder = MinecraftDecoder(server: false)
+                    let encoder = MinecraftEncoder(server: false)
+                    let wrapper = ChannelWrapper(session: self.generateSession(), server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
                     
-                    // Change protocol
-                    client.pingChannel?.prot = .STATUS
+                    // Add client to list
+                    client.pingChannel = wrapper
                     
-                    // Login request
-                    client.pingChannel?.send(packet: StatusRequest())
-                } else {
-                    // Server not found
-                    completionHandler(nil)
+                    // Add then to pipeline
+                    return channel.pipeline.addHandlers([
+                        ByteToMessageHandler(decoder),
+                        MessageToByteHandler(encoder),
+                        RemoteWorldPingHandler(channelWrapper: client, completionHandler: completionHandler)
+                    ])
                 }
-            }
+                .connect(to: address)
+                .whenComplete { result in
+                    if (try? result.get()) != nil {
+                        // Send handshake
+                        client.pingChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: self.host, port: Int16(self.port), requestedProtocol: 1))
+                        
+                        // Change protocol
+                        client.pingChannel?.prot = .STATUS
+                        
+                        // Login request
+                        client.pingChannel?.send(packet: StatusRequest())
+                    } else {
+                        // Server not found
+                        completionHandler(nil)
+                    }
+                }
+        }
     }
     
     func getName() -> String {
@@ -151,6 +157,10 @@ class RemoteWorld: WorldProtocol {
     
     func getType() -> WorldType {
         return .remote
+    }
+    
+    func getAddress() -> SocketAddress? {
+        return try? SocketAddress.makeAddressResolvingHost(host, port: port)
     }
     
     // Get a new session id
