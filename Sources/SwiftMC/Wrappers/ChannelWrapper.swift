@@ -31,19 +31,26 @@ public class ChannelWrapper: Player {
     var closed: Bool = false
     var closing: Bool = false
     
+    // Other channels
+    var remoteChannel: ChannelWrapper?
+    var pingChannel: ChannelWrapper?
+    
     // Encoding/Decoding
     var decoder: MinecraftDecoder
     var encoder: MinecraftEncoder
     var protocolVersion: Int32
     var prot: Prot
     
+    // Encryption
+    var encryptionRequest: EncryptionRequest?
+    var sharedKey: [UInt8]?
+    
     // Player related
     var receivedLogin: Bool = false
     var lastDimmension: Int32?
-    var login: LoginSuccess?
+    var name: String?
+    var uuid: String?
     var world: WorldProtocol?
-    var remoteChannel: ChannelWrapper?
-    var pingChannel: ChannelWrapper?
     
     init(session: String, server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder, prot: Prot, protocolVersion: Int32) {
         self.session = session
@@ -66,10 +73,6 @@ public class ChannelWrapper: Player {
     func send(packet: Packet) {
         if !closed {
             // Check packet type
-            if let login = packet as? LoginSuccess {
-                // Save user login
-                self.login = login
-            }
             if packet as? Login != nil {
                 if receivedLogin {
                     // Don't send again
@@ -121,11 +124,11 @@ public class ChannelWrapper: Player {
     // Adapters for outside
     
     public func getName() -> String {
-        return login?.username ?? "Player"
+        return name ?? "Player"
     }
     
     public func getUUID() -> String {
-        return login?.uuid ?? "NULL"
+        return uuid ?? "NULL"
     }
     
     public func sendMessage(message: ChatMessage) {

@@ -23,7 +23,7 @@ open class Configuration {
     
     public var protocolVersion: Int32
     public var port: Int
-    public var online: Bool = true
+    public var mode: AuthentificationMode = .online
     public var motd: String?
     public var favicon: String?
     public var slots: Int = 42
@@ -38,8 +38,8 @@ open class Configuration {
         }
     }
     
-    public func with(online: Bool) -> Configuration {
-        self.online = online
+    public func with(mode: AuthentificationMode) -> Configuration {
+        self.mode = mode
         return self
     }
     

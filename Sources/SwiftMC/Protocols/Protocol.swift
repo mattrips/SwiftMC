@@ -78,7 +78,7 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x1A),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x1B),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x1A),
-            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0xAB)
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x1B)
         ])
         // ...
         to_server.registerPacket(packetClass: KeepAlive.self, mappings: [
@@ -114,6 +114,9 @@ class Prot {
         to_client.registerPacket(packetClass: Kick.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
         ])
+        to_client.registerPacket(packetClass: EncryptionRequest.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x01)
+        ])
         // ...
         to_client.registerPacket(packetClass: LoginSuccess.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x02)
@@ -124,6 +127,9 @@ class Prot {
         // ...
         to_server.registerPacket(packetClass: LoginRequest.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
+        ])
+        to_server.registerPacket(packetClass: EncryptionResponse.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x01)
         ])
     }
     

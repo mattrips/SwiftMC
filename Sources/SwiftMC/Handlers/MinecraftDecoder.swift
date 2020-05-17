@@ -29,6 +29,7 @@ class MinecraftDecoder: ByteToMessageDecoder {
     // Configuration for decoding
     var channel: ChannelWrapper?
     var server: Bool
+    var garbage: ByteBuffer?
     
     // Initializer
     init(server: Bool) {
@@ -42,31 +43,48 @@ class MinecraftDecoder: ByteToMessageDecoder {
             try legacyDecoder(context: context, buffer: &buffer)
         }
         
-        // Frame decoder
-        let readerIndex = buffer.readerIndex
-        guard buffer.readableBytes > 0, let size = buffer.readVarInt(), buffer.readableBytes >= size else {
-            buffer.moveReaderIndex(to: readerIndex)
-            return .needMoreData
+        // Check if something left
+        var decodedBuffer = ByteBufferAllocator().buffer(capacity: 1024*1024)
+        if var garbage = garbage {
+            // Get what left
+            decodedBuffer.writeBuffer(&garbage)
         }
         
-        // Create a buffer with specified size
-        var limitedBuffer = ByteBufferAllocator().buffer(capacity: 64*1024*1024)
-        limitedBuffer.writeBytes(buffer.readBytes(length: Int(size)) ?? [])
+        // Encryption decoder
+        try encryptionDecoder(from: &buffer, out: &decodedBuffer)
         
-        // Decompress if needed
-        if let threshold = channel?.threshold, threshold != -1 {
-            // Move buffer
-            var newBuffer = ByteBufferAllocator().buffer(capacity: 64*1024*1024)
+        // Loop to process multiple packets
+        repeat {
+            // Frame decoder
+            let readerIndex = decodedBuffer.readerIndex
+            guard decodedBuffer.readableBytes > 0, let size = decodedBuffer.readVarInt(), decodedBuffer.readableBytes >= size else {
+                decodedBuffer.moveReaderIndex(to: readerIndex)
+                garbage = decodedBuffer
+                return .needMoreData
+            }
             
-            // Handle
-            try thresholdDecoder(oldBuffer: &limitedBuffer, newBuffer: &newBuffer)
+            // Create a buffer with specified size
+            var limitedBuffer = ByteBufferAllocator().buffer(capacity: 1024*1024)
+            limitedBuffer.writeBytes(decodedBuffer.readBytes(length: Int(size)) ?? [])
             
-            // And decode packet
-            try packetDecoder(context: context, buffer: &newBuffer)
-        } else {
-            // Classic packet decoder
-            try packetDecoder(context: context, buffer: &limitedBuffer)
-        }
+            // Decompress if needed
+            if let threshold = channel?.threshold, threshold != -1 {
+                // Move buffer
+                var newBuffer = ByteBufferAllocator().buffer(capacity: 1024*1024)
+                
+                // Handle
+                try thresholdDecoder(oldBuffer: &limitedBuffer, newBuffer: &newBuffer)
+                
+                // And decode packet
+                try packetDecoder(context: context, buffer: &newBuffer)
+            } else {
+                // Classic packet decoder
+                try packetDecoder(context: context, buffer: &limitedBuffer)
+            }
+        } while decodedBuffer.readableBytes != 0
+        
+        // Clean garbage
+        garbage = nil
         
         // Move index
         return .continue
@@ -104,6 +122,17 @@ class MinecraftDecoder: ByteToMessageDecoder {
             oldBuffer.moveReaderIndex(forwardBy: oldBuffer.readableBytes)
         } else {
             try oldBuffer.decompress(to: &newBuffer, with: .deflate)
+        }
+    }
+    
+    // Encryption encoder
+    func encryptionDecoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
+        if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let decrypted = EncryptionManager.AESDecrypt(data: Data(bytes), keyData: Data(sharedKey)) {
+            // Decrypt data with given key
+            out.writeBytes([UInt8](decrypted))
+        } else {
+            // Just send data
+            out.writeBuffer(&from)
         }
     }
     

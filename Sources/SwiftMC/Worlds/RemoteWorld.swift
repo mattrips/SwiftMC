@@ -47,7 +47,7 @@ class RemoteWorld: WorldProtocol {
                 client.remoteChannel?.prot = .LOGIN
                 
                 // Login request
-                client.remoteChannel?.send(packet: LoginRequest(data: client.login?.username ?? "Player"))
+                client.remoteChannel?.send(packet: LoginRequest(data: client.getName()))
             }
         }
     }
@@ -77,7 +77,8 @@ class RemoteWorld: WorldProtocol {
         }
         if let loginSuccess = packet as? LoginSuccess {
             // Store success and change to game protocol
-            client.remoteChannel?.login = loginSuccess
+            client.remoteChannel?.name = loginSuccess.username
+            client.remoteChannel?.uuid = loginSuccess.uuid
             client.remoteChannel?.prot = .GAME
             return
         }

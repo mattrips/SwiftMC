@@ -68,6 +68,16 @@ extension ByteBuffer {
         }
     }
     
+    mutating func readArray() -> [UInt8]? {
+        let len = readVarInt() ?? 0
+        return readBytes(length: Int(len))
+    }
+    
+    mutating func writeArray(value: [UInt8]) {
+        writeVarInt(value: Int32(value.count))
+        writeBytes(value)
+    }
+    
     mutating func readBool() -> Bool? {
         return readBytes(length: MemoryLayout<Bool>.size)?.reversed().withUnsafeBufferPointer {
             $0.baseAddress!.withMemoryRebound(to: Bool.self, capacity: 1) {

@@ -37,33 +37,39 @@ class MinecraftEncoder: MessageToByteEncoder {
     
     func encode(data: Packet, out: inout ByteBuffer) throws {
         // Init a temporary buffer
-        var buffer1 = ByteBufferAllocator().buffer(capacity: 64*1024*1024)
-        var buffer2 = ByteBufferAllocator().buffer(capacity: 64*1024*1024)
+        var buffer1 = ByteBufferAllocator().buffer(capacity: 1024*1024)
+        var buffer2 = ByteBufferAllocator().buffer(capacity: 1024*1024)
+        var buffer3 = ByteBufferAllocator().buffer(capacity: 1024*1024)
         
         // Packet encoder
         try packetEncoder(data: data, out: &buffer1)
         
-        // Check for compression
-        if let threshold = channel?.threshold, threshold != -1 {
-            try thresholdEncoder(threshold: threshold, from: &buffer1, out: &buffer2)
-        } else {
-            buffer2.writeBuffer(&buffer1)
-        }
+        // Threshold encoder
+        try thresholdEncoder(from: &buffer1, out: &buffer2)
         
         // Frame encoder
-        try frameEncoder(from: &buffer2, out: &out)
+        try frameEncoder(from: &buffer2, out: &buffer3)
+        
+        // Encryption encoder
+        try encryptionEncoder(from: &buffer3, out: &out)
     }
     
     // Threshold
-    func thresholdEncoder(threshold: Int32, from: inout ByteBuffer, out: inout ByteBuffer) throws {
-        // Check for size
-        let fromSize = Int32(from.readableBytes)
-        if fromSize < threshold {
-            out.writeVarInt(value: 0)
-            out.writeBuffer(&from)
+    func thresholdEncoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
+        // Check for compression
+        if let threshold = channel?.threshold, threshold != -1 {
+            // Check for size
+            let fromSize = Int32(from.readableBytes)
+            if fromSize < threshold {
+                out.writeVarInt(value: 0)
+                out.writeBuffer(&from)
+            } else {
+                out.writeVarInt(value: fromSize)
+                try from.compress(to: &out, with: .deflate)
+            }
         } else {
-            out.writeVarInt(value: fromSize)
-            try from.compress(to: &out, with: .deflate)
+            // Just send data
+            out.writeBuffer(&from)
         }
     }
     
@@ -71,6 +77,17 @@ class MinecraftEncoder: MessageToByteEncoder {
     func frameEncoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
         out.writeVarInt(value: Int32(from.readableBytes))
         out.writeBuffer(&from)
+    }
+    
+    // Encryption encoder
+    func encryptionEncoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
+        if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let encrypted = EncryptionManager.AESEncrypt(data: Data(bytes), keyData: Data(sharedKey)) {
+            // Encrypt data with given key
+            out.writeBytes([UInt8](encrypted))
+        } else {
+            // Just send data
+            out.writeBuffer(&from)
+        }
     }
     
     // Packet encoder

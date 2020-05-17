@@ -26,6 +26,9 @@ struct Server: ParsableCommand {
     @Option(help: "Port of the server")
     var port: Int?
     
+    @Option(help: "Authentification mode (online, offline, auto)")
+    var mode: String?
+    
     @Option(help: "Number of slots on the server")
     var slots: Int?
     
@@ -35,14 +38,19 @@ struct Server: ParsableCommand {
     @Option(help: "Main world (in format type:name)")
     var world: String?
     
+    @Option(help: "Enable debug")
+    var debug: Bool?
+    
     func run() throws {
         // Get the latest version
         if let version = ProtocolConstants.supported_versions_ids.last {
             // Initialize a server
             let server = SwiftMC(configuration:
                 Configuration(protocolVersion: version, port: port ?? 25565)
+                    .with(mode: mode == "online" ? .online : mode == "auto" ? .auto : .offline)
                     .with(slots: slots ?? 42)
                     .with(motd: motd ?? "A SwiftMC Server")
+                    .enable(debug: debug ?? false)
             )
             
             // Add a default world

@@ -50,6 +50,9 @@ class InitialHandler: PacketHandler {
         if let loginRequest = packet as? LoginRequest {
             self.handle(loginRequest: loginRequest)
         }
+        if let encryptionResponse = packet as? EncryptionResponse {
+            self.handle(encryptionResponse: encryptionResponse)
+        }
     }
     
     func handle(pingPacket: PingPacket) {
@@ -110,7 +113,17 @@ class InitialHandler: PacketHandler {
     
     func handle(loginRequest: LoginRequest) {
         if let channel = channel {
-            // Check number of slots + not already connected
+            // Check name
+            if loginRequest.data.contains(".") || loginRequest.data.count > 16 {
+                // Invalid name
+                disconnect(reason: "Invalid name!")
+                return
+            }
+            
+            // Save name
+            channel.name = loginRequest.data
+            
+            // Check number of slots
             let connected = channel.server.players.count
             let slots = channel.server.configuration.slots
             if connected >= slots {
@@ -119,29 +132,74 @@ class InitialHandler: PacketHandler {
                 return
             }
             
-            // Check for online mode
-            // If yes, send encryption packet
-            // Else, finish
+            // Check not already connected
+            if channel.server.players.contains(where: { $0.getName().lowercased() == loginRequest.data.lowercased() }) {
+                // Already connected
+                disconnect(reason: "You are already connected!")
+                return
+            }
             
-
-            // Get UUID
-            if let uuid = loginRequest.data.getUUID() {
+            // Check for online mode
+            if channel.server.mode == .online || channel.server.mode == .auto {
+                if EncryptionManager.supportsEncryption(), #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *) {
+                    // Send encryption packet
+                    let encryptionRequest = EncryptionManager.generateRequest()
+                    channel.send(packet: encryptionRequest)
+                    channel.encryptionRequest = encryptionRequest
+                } else if channel.server.mode == .auto {
+                    // End login
+                    finish()
+                } else {
+                    // Encryption not supported
+                    disconnect(reason: "Encryption is not supported on this server!")
+                }
+            } else {
                 // End login
-                finish(success: LoginSuccess(uuid: uuid, username: loginRequest.data))
+                finish()
             }
         }
     }
     
-    func finish(success: LoginSuccess) {
-        // Enable threshold
-        channel?.send(packet: SetCompresion(threshold: 256))
-        channel?.threshold = 256
+    func handle(encryptionResponse: EncryptionResponse) {
+        if let channel = channel, let encryptionRequest = channel.encryptionRequest, #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *) {
+            // Get shared key
+            channel.sharedKey = EncryptionManager.getSecret(response: encryptionResponse, request: encryptionRequest)
+            
+            // Check from Mojang API
+            
+            
+            // Complete the request
+            
+            
+            // End login
+            finish()
+        } else {
+            // Encryption not supported
+            disconnect(reason: "Encryption is not supported on this server!")
+        }
+    }
+    
+    func finish() {
+        // Set offline UUID if required
+        if channel?.uuid == nil {
+            channel?.uuid = channel?.name?.getUUID()
+        }
         
-        // Send success packet and switch to game protocol
-        channel?.server.log("Authenticating player \(success.username)... (\(success.uuid))")
-        channel?.send(packet: success)
-        channel?.prot = .GAME
-        channel?.setHandler(handler: GameHandler())
+        // Check that name and uuid are set
+        if let name = channel?.name, let uuid = channel?.uuid {
+            // Enable threshold
+            channel?.send(packet: SetCompresion(threshold: 256))
+            channel?.threshold = 256
+            
+            // Send success packet and switch to game protocol
+            channel?.server.log("Authenticating player \(name)... (\(uuid))")
+            channel?.send(packet: LoginSuccess(uuid: uuid, username: name))
+            channel?.prot = .GAME
+            channel?.setHandler(handler: GameHandler())
+        } else {
+            // Disconnect
+            disconnect(reason: "An error occurred while authentification")
+        }
     }
     
     func disconnect(reason: String) {

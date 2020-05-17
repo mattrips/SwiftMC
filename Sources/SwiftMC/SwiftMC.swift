@@ -26,11 +26,11 @@ public class SwiftMC: CommandSender {
     // Publics vars
     public let configuration: Configuration
     public let port: Int
-    public let online: Bool
+    public let mode: AuthentificationMode
     public var players: [Player] {
         get {
             return clients.filter { client in
-                client.login != nil
+                client.name != nil && client.uuid != nil
             }
         }
     }
@@ -52,7 +52,7 @@ public class SwiftMC: CommandSender {
     // Initializer
     public init(configuration: Configuration) {
         self.port = configuration.port
-        self.online = configuration.online
+        self.mode = configuration.mode
         self.configuration = configuration
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         self.commands = [:]
@@ -278,7 +278,7 @@ public class SwiftMC: CommandSender {
     // Load a world
     public func loadWorld(world: WorldProtocol) {
         worlds.append(world)
-        log("Loaded world: \(world.getType()):\(world.getName())")
+        log("Loaded world \(world.getType()):\(world.getName())")
     }
     
     // Create a local world
