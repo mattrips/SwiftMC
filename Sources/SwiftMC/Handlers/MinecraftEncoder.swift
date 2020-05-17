@@ -81,12 +81,14 @@ class MinecraftEncoder: MessageToByteEncoder {
     
     // Encryption encoder
     func encryptionEncoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
-        if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let encrypted = EncryptionManager.AESEncrypt(data: Data(bytes), keyData: Data(sharedKey)) {
-            // Encrypt data with given key
-            out.writeBytes([UInt8](encrypted))
-        } else {
-            // Just send data
-            out.writeBuffer(&from)
+        if from.readableBytes > 0 {
+            if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let encrypted = EncryptionManager.AESEncrypt(data: Data(bytes), keyData: Data(sharedKey)) {
+                // Encrypt data with given key
+                out.writeBytes([UInt8](encrypted))
+            } else {
+                // Just send data
+                out.writeBuffer(&from)
+            }
         }
     }
     

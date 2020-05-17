@@ -96,12 +96,22 @@ class EncryptionManager {
         let query = [
             kSecValueRef as String: key,
             kSecReturnData as String: true
-        ] as [String : Any]
+        ] as [String: Any]
         var out: AnyObject?
         guard errSecSuccess == SecItemCopyMatching(query as CFDictionary, &out) else {
             return nil
         }
         return out as? Data
+    }
+    
+    @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
+    static func getSecKey(for data: Data) -> SecKey? {
+        let attributes = [
+            kSecAttrKeyClass as String: kSecAttrKeyClassSymmetric,
+            kSecAttrKeyType as String: kSecAttrKeyTypeAES,
+            kSecAttrKeySizeInBits as String: data.count,
+        ] as [String: Any]
+        return SecKeyCreateWithData(data as CFData, attributes as CFDictionary, nil)
     }
     
     @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
@@ -131,14 +141,6 @@ class EncryptionManager {
         return decrypted
     }
     
-    static func randomGenerateBytes(count: Int) -> Data? {
-        let bytes = UnsafeMutableRawPointer.allocate(byteCount: count, alignment: 1)
-        defer { bytes.deallocate() }
-        let status = CCRandomGenerateBytes(bytes, count)
-        guard status == kCCSuccess else { return nil }
-        return Data(bytes: bytes, count: count)
-    }
-    
     // AES encryption
     static func AESEncrypt(data: Data, keyData: Data) -> Data? {
         let keyLength = keyData.count
@@ -147,12 +149,13 @@ class EncryptionManager {
             return nil
         }
 
-        let ivSize = kCCBlockSizeAES128;
+        let ivSize = kCCBlockSizeAES128
         let cryptLength = size_t(ivSize + data.count + kCCBlockSizeAES128)
-        var cryptData = Data(count:cryptLength)
+        var cryptData = Data(count: cryptLength)
 
-        let status = cryptData.withUnsafeMutableBytes { ivBytes in
-            SecRandomCopyBytes(kSecRandomDefault, kCCBlockSizeAES128, ivBytes)
+        let status = cryptData.withUnsafeMutableBytes { ivBytes -> Int32 in
+            guard let baseAddress = ivBytes.baseAddress else { return 0 }
+            return SecRandomCopyBytes(kSecRandomDefault, kCCBlockSizeAES128, baseAddress)
         }
         if (status != 0) {
             return nil
@@ -161,22 +164,18 @@ class EncryptionManager {
         var numBytesEncrypted: size_t = 0
         let options = CCOptions(kCCModeCFB8)
 
-        let cryptStatus = cryptData.withUnsafeMutableBytes { cryptBytes in
-            data.withUnsafeBytes { dataBytes in
-                keyData.withUnsafeBytes { keyBytes in
-                    CCCrypt(CCOperation(kCCEncrypt),
-                            CCAlgorithm(kCCAlgorithmAES),
-                            options,
-                            keyBytes, keyLength,
-                            cryptBytes,
-                            dataBytes, data.count,
-                            cryptBytes+kCCBlockSizeAES128, cryptLength,
-                            &numBytesEncrypted)
+        let cryptStatus = cryptData.withUnsafeMutableBytes { cryptBytes -> CCCryptorStatus in
+            guard let cryptBytesAddress = cryptBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
+            return data.withUnsafeBytes { dataBytes -> CCCryptorStatus in
+                guard let dataBytesAddress = dataBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
+                return keyData.withUnsafeBytes { keyBytes -> CCCryptorStatus in
+                    guard let keyBytesAddress = keyBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
+                    return CCCrypt(CCOperation(kCCEncrypt), CCAlgorithm(kCCAlgorithmAES), options, keyBytesAddress, keyLength, cryptBytesAddress, dataBytesAddress, data.count, cryptBytesAddress + kCCBlockSizeAES128, cryptLength, &numBytesEncrypted)
                 }
             }
         }
 
-        if UInt32(cryptStatus) == UInt32(kCCSuccess) {
+        if cryptStatus == kCCSuccess {
             cryptData.count = numBytesEncrypted + ivSize
         } else {
             return nil
@@ -186,36 +185,32 @@ class EncryptionManager {
     }
     
     // AES decrypt
-    static func AESDecrypt(data:Data, keyData:Data) -> Data? {
+    static func AESDecrypt(data: Data, keyData: Data) -> Data? {
         let keyLength = keyData.count
         let validKeyLengths = [kCCKeySizeAES128, kCCKeySizeAES192, kCCKeySizeAES256]
         if (validKeyLengths.contains(keyLength) == false) {
             return nil
         }
 
-        let ivSize = kCCBlockSizeAES128;
+        let ivSize = kCCBlockSizeAES128
         let clearLength = size_t(data.count - ivSize)
-        var clearData = Data(count:clearLength)
+        var clearData = Data(count: clearLength)
 
         var numBytesDecrypted: size_t = 0
         let options = CCOptions(kCCModeCFB8)
 
-        let cryptStatus = clearData.withUnsafeMutableBytes { cryptBytes in
-            data.withUnsafeBytes { dataBytes in
-                keyData.withUnsafeBytes { keyBytes in
-                    CCCrypt(CCOperation(kCCDecrypt),
-                            CCAlgorithm(kCCAlgorithmAES128),
-                            options,
-                            keyBytes, keyLength,
-                            dataBytes,
-                            dataBytes+kCCBlockSizeAES128, clearLength,
-                            cryptBytes, clearLength,
-                            &numBytesDecrypted)
+        let cryptStatus = clearData.withUnsafeMutableBytes { cryptBytes -> CCCryptorStatus in
+            guard let cryptBytesAddress = cryptBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
+            return data.withUnsafeBytes { dataBytes -> CCCryptorStatus in
+                guard let dataBytesAddress = dataBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
+                return keyData.withUnsafeBytes { keyBytes -> CCCryptorStatus in
+                    guard let keyBytesAddress = keyBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
+                    return CCCrypt(CCOperation(kCCDecrypt), CCAlgorithm(kCCAlgorithmAES128), options, keyBytesAddress, keyLength, dataBytesAddress, dataBytesAddress + kCCBlockSizeAES128, clearLength, cryptBytesAddress, clearLength, &numBytesDecrypted)
                 }
             }
         }
 
-        if UInt32(cryptStatus) == UInt32(kCCSuccess) {
+        if cryptStatus == kCCSuccess {
             clearData.count = numBytesDecrypted
         } else {
             return nil

@@ -166,7 +166,11 @@ class InitialHandler: PacketHandler {
             channel.sharedKey = EncryptionManager.getSecret(response: encryptionResponse, request: encryptionRequest)
             
             // Check from Mojang API
-            
+            /*guard let idBytes = encryptionRequest.serverId.data(using: .utf8), let sharedKey = channel.sharedKey, let secKey = EncryptionManager.getSecKey(for: Data(sharedKey)), let encodedSharedKey = EncryptionManager.getAttributes(of: secKey), let publiKey = EncryptionManager.keys?.publicKey, let encodedPublicKey = EncryptionManager.getAttributes(of: publiKey), let sha1 = Data([UInt8](idBytes) + [UInt8](encodedSharedKey) + [UInt8](encodedPublicKey)).base64EncodedString().sha1(), let encodedHash = Data(base64Encoded: sha1) else {
+                // Error
+                disconnect(reason: "Failed to authenticate your account!")
+                return
+            }*/
             
             // Complete the request
             
