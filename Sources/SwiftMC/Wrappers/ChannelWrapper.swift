@@ -48,6 +48,7 @@ public class ChannelWrapper: Player {
     // Player related
     var receivedLogin: Bool = false
     var lastDimmension: Int32?
+    var properties: [[String: Any]]?
     var name: String?
     var uuid: String?
     var world: WorldProtocol?

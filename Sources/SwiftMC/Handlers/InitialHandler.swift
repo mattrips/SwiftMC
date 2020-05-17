@@ -19,6 +19,7 @@
 
 import Foundation
 import NIO
+import SwCrypt
 
 class InitialHandler: PacketHandler {
     
@@ -161,19 +162,40 @@ class InitialHandler: PacketHandler {
     }
     
     func handle(encryptionResponse: EncryptionResponse) {
-        if let channel = channel, let encryptionRequest = channel.encryptionRequest, #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *) {
+        if let channel = channel, let username = channel.name, let encryptionRequest = channel.encryptionRequest, #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *) {
             // Get shared key
             channel.sharedKey = EncryptionManager.getSecret(response: encryptionResponse, request: encryptionRequest)
             
-            // Check from Mojang API
-            /*guard let idBytes = encryptionRequest.serverId.data(using: .utf8), let sharedKey = channel.sharedKey, let secKey = EncryptionManager.getSecKey(for: Data(sharedKey)), let encodedSharedKey = EncryptionManager.getAttributes(of: secKey), let publiKey = EncryptionManager.keys?.publicKey, let encodedPublicKey = EncryptionManager.getAttributes(of: publiKey), let sha1 = Data([UInt8](idBytes) + [UInt8](encodedSharedKey) + [UInt8](encodedPublicKey)).base64EncodedString().sha1(), let encodedHash = Data(base64Encoded: sha1) else {
+            // Prepare data
+            guard let idBytes = encryptionRequest.serverId.data(using: .utf8), let sharedKey = channel.sharedKey, let secKey = EncryptionManager.getSecKey(for: Data(sharedKey)), let encodedSharedKey = EncryptionManager.getEncoded(key: secKey), let publiKey = EncryptionManager.keys?.publicKey, let encodedPublicKey = EncryptionManager.getEncoded(key: publiKey) else {
                 // Error
                 disconnect(reason: "Failed to authenticate your account!")
                 return
-            }*/
+            }
+            
+            // Get the encoded hash
+            let encodedHash = CC.digest(Data([UInt8](idBytes) + [UInt8](encodedSharedKey) + [UInt8](encodedPublicKey)), alg: .sha1).map({ String(format: "%02hhx", $0) }).joined()
+            print(encodedHash)
             
             // Complete the request
-            
+            MojangAuth(username: username, serverId: encodedHash).fetch { dict in
+                // Check data validity
+                if let dict = dict {
+                    // Read data
+                    channel.name = dict["name"] as? String ?? channel.name
+                    channel.uuid = (dict["id"] as? String)?.addSeparatorUUID() ?? channel.uuid
+                    channel.properties = dict["properties"] as? [[String: Any]]
+                    
+                    // End login
+                    self.finish()
+                } else if channel.server.mode == .auto {
+                    // End login
+                    self.finish()
+                } else {
+                    // Error
+                    self.disconnect(reason: "Invalid session!")
+                }
+            }
             
             // End login
             finish()

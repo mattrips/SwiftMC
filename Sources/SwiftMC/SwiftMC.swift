@@ -65,6 +65,7 @@ public class SwiftMC: CommandSender {
     public func start() {
         // Start
         log("Starting server...")
+        log("Selected mode: \(mode)")
         running = true
         
         // Register basic commands
@@ -108,13 +109,16 @@ public class SwiftMC: CommandSender {
                 log("Server running on port \(addr.port ?? 25565)")
             } else {
                 logError("ERROR: server reported no local address?")
+                stop()
             }
         } catch let error as NIO.IOError {
             // Error starting server
             logError("ERROR: failed to start server, errno: \(error.errnoCode)\n\(error.localizedDescription)")
+            stop()
         } catch {
             // Error starting server
             logError("ERROR: failed to start server: \(type(of: error))\(error)")
+            stop()
         }
         
         // Wait

@@ -61,17 +61,19 @@ extension String {
             var bytes = hash.hex2bin()
             bytes[6] = bytes[6] & 0x0F | 0x30
             bytes[8] = bytes[8] & 0x3F | 0x80
-            let hex = bin2hex(bytes)
-            let components: [String] = [
-                String(hex[hex.startIndex ..< hex.index(hex.startIndex, offsetBy: 8)]),
-                String(hex[hex.index(hex.startIndex, offsetBy: 8) ..< hex.index(hex.startIndex, offsetBy: 12)]),
-                String(hex[hex.index(hex.startIndex, offsetBy: 12) ..< hex.index(hex.startIndex, offsetBy: 16)]),
-                String(hex[hex.index(hex.startIndex, offsetBy: 16) ..< hex.index(hex.startIndex, offsetBy: 20)]),
-                String(hex[hex.index(hex.startIndex, offsetBy: 20) ..< hex.endIndex])
-            ]
-            return components.joined(separator: "-")
+            return bin2hex(bytes).addSeparatorUUID()
         }
         return nil
+    }
+    
+    func addSeparatorUUID() -> String {
+        var components = [String]()
+        components.append(String(self[startIndex ..< index(startIndex, offsetBy: 8)]))
+        components.append(String(self[index(startIndex, offsetBy: 8) ..< index(startIndex, offsetBy: 12)]))
+        components.append(String(self[index(startIndex, offsetBy: 12) ..< index(startIndex, offsetBy: 16)]))
+        components.append(String(self[index(startIndex, offsetBy: 16) ..< index(startIndex, offsetBy: 20)]))
+        components.append(String(self[index(startIndex, offsetBy: 20) ..< endIndex]))
+        return components.joined(separator: "-")
     }
     
     public static func + (lhs: String, rhs: ChatColor) -> String {
