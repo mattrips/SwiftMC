@@ -37,22 +37,6 @@ extension String {
             $0 + String(format: "%02x", digest[$1])
         }
     }
-    
-    func sha1() -> String? {
-        let length = Int(CC_SHA1_DIGEST_LENGTH)
-        var digest = [UInt8](repeating: 0, count: length)
-
-        if let d = self.data(using: .utf8) {
-            _ = d.withUnsafeBytes { body -> String in
-                CC_SHA1(body.baseAddress, CC_LONG(d.count), &digest)
-                return ""
-            }
-        }
-
-        return (0 ..< length).reduce("") {
-            $0 + String(format: "%02x", digest[$1])
-        }
-    }
 
     func hex2bin() -> [UInt8] {
         var hex = self

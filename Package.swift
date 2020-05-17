@@ -19,7 +19,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
         .package(url: "https://github.com/adam-fowler/compress-nio.git", from: "0.0.1"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.0.1"),
-        .package(url: "https://github.com/IBM-Swift/CommonCrypto", from: "1.0.0")
+        .package(url: "https://github.com/soyersoyer/SwCrypt.git", from: "5.0.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -29,7 +29,7 @@ let package = Package(
             dependencies: [
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "CompressNIO", package: "compress-nio"),
-                .product(name: "CommonCrypto", package: "CommonCrypto")
+                .product(name: "SwCrypt", package: "SwCrypt")
             ]),
         .target(
             name: "SwiftMCRun",

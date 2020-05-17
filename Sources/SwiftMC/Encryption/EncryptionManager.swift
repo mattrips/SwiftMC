@@ -19,33 +19,32 @@
 
 import Foundation
 import Security
+import SwCrypt
 import CommonCrypto
 
 class EncryptionManager {
     
-    // ASN.1 identifiers
-    static let bitStringIdentifier: UInt8 = 0x03
-    static let sequenceIdentifier: UInt8 = 0x30
-    
-    // ASN.1 AlgorithmIdentfier for RSA encryption: OID 1 2 840 113549 1 1 1 and NULL
-    static let algorithmIdentifierForRSAEncryption: [UInt8] = [0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00]
-    
     // Store keys
     static var keys: (publicKey: SecKey, privateKey: SecKey)? = {
-        let parameters: [String: Any] = [
-            kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
-            kSecAttrKeySizeInBits as String: 1024
-        ]
-
+        // Generation of RSA private and public keys
+        let parameters: [String:Any] = [kSecAttrKeyType as String: kSecAttrKeyTypeRSA, kSecAttrKeySizeInBits as String: 1024]
         var publicKey, privateKey: SecKey?
-
         SecKeyGeneratePair(parameters as CFDictionary, &publicKey, &privateKey)
         
+        // Get keys
         if let publicKey = publicKey, let privateKey = privateKey {
             return (publicKey, privateKey)
         }
         return nil
     }()
+    
+    // Get attributes for a key
+    static func getEncoded(key: SecKey) -> Data? {
+        if #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *), let pubAttributes = SecKeyCopyAttributes(key) as? [String: Any] {
+            return pubAttributes[kSecValueData as String] as? Data
+        }
+        return nil
+    }
     
     // Check if encryption is supported
     static func supportsEncryption() -> Bool {
@@ -60,9 +59,9 @@ class EncryptionManager {
         
         // Public key
         var publicKey = [UInt8]()
-        if let rawKey = keys?.publicKey, let attributes = getAttributes(of: rawKey) {
+        if let key = keys?.publicKey, let encoded = getEncoded(key: key) {
             // Add key info
-            publicKey.append(contentsOf: [UInt8](attributes))
+            publicKey.append(contentsOf: [UInt8](encoded))
         }
         
         // Verify token
@@ -76,32 +75,11 @@ class EncryptionManager {
     }
     
     @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
-    static func getAttributes(of key: SecKey) -> Data? {
-        if let pubAttributes = SecKeyCopyAttributes(key) as? [String: Any] {
-            return pubAttributes[kSecValueData as String] as? Data
-        }
-        return nil
-    }
-    
-    @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
     static func getSecret(response: EncryptionResponse, request: EncryptionRequest) -> [UInt8]? {
         if let privateKey = keys?.privateKey, let decrypted = decrypt(privateKey: privateKey, content: Data(response.verifyToken) as CFData, usingAlgorithm: .rsaEncryptionPKCS1) as Data?, [UInt8](decrypted) == request.verifyToken, let secret = decrypt(privateKey: privateKey, content: Data(response.sharedSecret) as CFData, usingAlgorithm: .rsaEncryptionPKCS1) as Data? {
             return [UInt8](secret)
         }
         return nil
-    }
-    
-    // Get bytes for a key
-    static func getData(for key: SecKey) -> Data? {
-        let query = [
-            kSecValueRef as String: key,
-            kSecReturnData as String: true
-        ] as [String: Any]
-        var out: AnyObject?
-        guard errSecSuccess == SecItemCopyMatching(query as CFDictionary, &out) else {
-            return nil
-        }
-        return out as? Data
     }
     
     @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
@@ -139,84 +117,6 @@ class EncryptionManager {
         }
                     
         return decrypted
-    }
-    
-    // AES encryption
-    static func AESEncrypt(data: Data, keyData: Data) -> Data? {
-        let keyLength = keyData.count
-        let validKeyLengths = [kCCKeySizeAES128, kCCKeySizeAES192, kCCKeySizeAES256]
-        if (validKeyLengths.contains(keyLength) == false) {
-            return nil
-        }
-
-        let ivSize = kCCBlockSizeAES128
-        let cryptLength = size_t(ivSize + data.count + kCCBlockSizeAES128)
-        var cryptData = Data(count: cryptLength)
-
-        let status = cryptData.withUnsafeMutableBytes { ivBytes -> Int32 in
-            guard let baseAddress = ivBytes.baseAddress else { return 0 }
-            return SecRandomCopyBytes(kSecRandomDefault, kCCBlockSizeAES128, baseAddress)
-        }
-        if (status != 0) {
-            return nil
-        }
-
-        var numBytesEncrypted: size_t = 0
-        let options = CCOptions(kCCModeCFB8)
-
-        let cryptStatus = cryptData.withUnsafeMutableBytes { cryptBytes -> CCCryptorStatus in
-            guard let cryptBytesAddress = cryptBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
-            return data.withUnsafeBytes { dataBytes -> CCCryptorStatus in
-                guard let dataBytesAddress = dataBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
-                return keyData.withUnsafeBytes { keyBytes -> CCCryptorStatus in
-                    guard let keyBytesAddress = keyBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
-                    return CCCrypt(CCOperation(kCCEncrypt), CCAlgorithm(kCCAlgorithmAES), options, keyBytesAddress, keyLength, cryptBytesAddress, dataBytesAddress, data.count, cryptBytesAddress + kCCBlockSizeAES128, cryptLength, &numBytesEncrypted)
-                }
-            }
-        }
-
-        if cryptStatus == kCCSuccess {
-            cryptData.count = numBytesEncrypted + ivSize
-        } else {
-            return nil
-        }
-
-        return cryptData
-    }
-    
-    // AES decrypt
-    static func AESDecrypt(data: Data, keyData: Data) -> Data? {
-        let keyLength = keyData.count
-        let validKeyLengths = [kCCKeySizeAES128, kCCKeySizeAES192, kCCKeySizeAES256]
-        if (validKeyLengths.contains(keyLength) == false) {
-            return nil
-        }
-
-        let ivSize = kCCBlockSizeAES128
-        let clearLength = size_t(data.count - ivSize)
-        var clearData = Data(count: clearLength)
-
-        var numBytesDecrypted: size_t = 0
-        let options = CCOptions(kCCModeCFB8)
-
-        let cryptStatus = clearData.withUnsafeMutableBytes { cryptBytes -> CCCryptorStatus in
-            guard let cryptBytesAddress = cryptBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
-            return data.withUnsafeBytes { dataBytes -> CCCryptorStatus in
-                guard let dataBytesAddress = dataBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
-                return keyData.withUnsafeBytes { keyBytes -> CCCryptorStatus in
-                    guard let keyBytesAddress = keyBytes.baseAddress else { return CCCryptorStatus(kCCParamError) }
-                    return CCCrypt(CCOperation(kCCDecrypt), CCAlgorithm(kCCAlgorithmAES128), options, keyBytesAddress, keyLength, dataBytesAddress, dataBytesAddress + kCCBlockSizeAES128, clearLength, cryptBytesAddress, clearLength, &numBytesDecrypted)
-                }
-            }
-        }
-
-        if cryptStatus == kCCSuccess {
-            clearData.count = numBytesDecrypted
-        } else {
-            return nil
-        }
-        
-        return clearData
     }
     
 }
