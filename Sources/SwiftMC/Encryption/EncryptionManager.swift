@@ -19,7 +19,6 @@
 
 import Foundation
 import Security
-import SwCrypt
 import CommonCrypto
 
 class EncryptionManager {

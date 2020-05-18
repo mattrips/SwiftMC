@@ -86,6 +86,8 @@ class MinecraftEncoder: MessageToByteEncoder {
             if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let encrypted = try? CC.crypt(.encrypt, blockMode: .cfb8, algorithm: .aes, padding: .noPadding, data: Data(bytes), key: Data(sharedKey), iv: Data(sharedKey)) {
                 // Encrypt data with given key
                 out.writeBytes([UInt8](encrypted))
+                print("===== Raw: " + bytes.map({ String(format: "%02hhx", $0) }).joined(separator: " "))
+                print("Encrypted: " + encrypted.map({ String(format: "%02hhx", $0) }).joined(separator: " "))
             } else {
                 // Just send data
                 out.writeBuffer(&from)

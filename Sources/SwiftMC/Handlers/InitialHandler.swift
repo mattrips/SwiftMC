@@ -58,10 +58,7 @@ class InitialHandler: PacketHandler {
     
     func handle(pingPacket: PingPacket) {
         // Send back
-        channel?.send(packet: pingPacket)
-        
-        // And disconnect
-        channel?.close()
+        channel?.close(packet: pingPacket)
     }
     
     func handle(handshake: Handshake) {
@@ -167,18 +164,17 @@ class InitialHandler: PacketHandler {
             channel.sharedKey = EncryptionManager.getSecret(response: encryptionResponse, request: encryptionRequest)
             
             // Prepare data
-            guard let idBytes = encryptionRequest.serverId.data(using: .utf8), let sharedKey = channel.sharedKey, let secKey = EncryptionManager.getSecKey(for: Data(sharedKey)), let encodedSharedKey = EncryptionManager.getEncoded(key: secKey), let publiKey = EncryptionManager.keys?.publicKey, let encodedPublicKey = EncryptionManager.getEncoded(key: publiKey) else {
+            guard let idBytes = encryptionRequest.serverId.data(using: .utf8), let sharedKey = channel.sharedKey, let secKey = EncryptionManager.getSecKey(for: Data(sharedKey)), let encodedSharedKey = EncryptionManager.getEncoded(key: secKey), let publicKey = EncryptionManager.keys?.publicKey, let encodedPublicKey = EncryptionManager.getEncoded(key: publicKey) else {
                 // Error
                 disconnect(reason: "Failed to authenticate your account!")
                 return
             }
             
             // Get the encoded hash
-            let encodedHash = CC.digest(Data([UInt8](idBytes) + [UInt8](encodedSharedKey) + [UInt8](encodedPublicKey)), alg: .sha1).map({ String(format: "%02hhx", $0) }).joined()
-            print(encodedHash)
+            let encodedHash = CC.digest(Data([UInt8](idBytes) + [UInt8](encodedSharedKey) + [UInt8](encodedPublicKey)), alg: .sha1).toSignedHexString()
             
             // Complete the request
-            MojangAuth(username: username, serverId: encodedHash).fetch { dict in
+            MojangHasJoined(username: username, serverId: encodedHash).fetch(in: channel.server.eventLoopGroup) { dict in
                 // Check data validity
                 if let dict = dict {
                     // Read data
@@ -196,9 +192,6 @@ class InitialHandler: PacketHandler {
                     self.disconnect(reason: "Invalid session!")
                 }
             }
-            
-            // End login
-            finish()
         } else {
             // Encryption not supported
             disconnect(reason: "Encryption is not supported on this server!")
@@ -214,13 +207,11 @@ class InitialHandler: PacketHandler {
         // Check that name and uuid are set
         if let name = channel?.name, let uuid = channel?.uuid {
             // Enable threshold
-            channel?.send(packet: SetCompresion(threshold: 256))
-            channel?.threshold = 256
+            channel?.send(packet: SetCompresion(threshold: 256), threshold: 256)
             
             // Send success packet and switch to game protocol
             channel?.server.log("Authenticating player \(name)... (\(uuid))")
-            channel?.send(packet: LoginSuccess(uuid: uuid, username: name))
-            channel?.prot = .GAME
+            channel?.send(packet: LoginSuccess(uuid: uuid, username: name), newProtocol: .GAME)
             channel?.setHandler(handler: GameHandler())
         } else {
             // Disconnect
