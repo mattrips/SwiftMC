@@ -31,10 +31,12 @@ class MinecraftDecoder: ByteToMessageDecoder {
     var channel: ChannelWrapper?
     var server: Bool
     var garbage: ByteBuffer?
+    var iv: [UInt8]
     
     // Initializer
     init(server: Bool) {
         self.server = server
+        self.iv = []
     }
     
     // Decode wrapper
@@ -129,9 +131,13 @@ class MinecraftDecoder: ByteToMessageDecoder {
     // Encryption encoder
     func encryptionDecoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
         if from.readableBytes > 0 {
-            if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let decrypted = try? CC.crypt(.decrypt, blockMode: .cfb8, algorithm: .aes, padding: .noPadding, data: Data(bytes), key: Data(sharedKey), iv: Data(sharedKey)) {
+            if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let decrypted = try? CC.crypt(.decrypt, blockMode: .cfb8, algorithm: .aes, padding: .noPadding, data: Data(bytes), key: Data(sharedKey), iv: Data(iv)) {
                 // Decrypt data with given key
                 out.writeBytes([UInt8](decrypted))
+                
+                // Update IV
+                self.iv = iv + bytes
+                self.iv.removeFirst(bytes.count)
             } else {
                 // Just send data
                 out.writeBuffer(&from)

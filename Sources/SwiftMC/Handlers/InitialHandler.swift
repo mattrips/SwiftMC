@@ -160,15 +160,17 @@ class InitialHandler: PacketHandler {
     
     func handle(encryptionResponse: EncryptionResponse) {
         if let channel = channel, let username = channel.name, let encryptionRequest = channel.encryptionRequest, #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *) {
-            // Get shared key
-            channel.sharedKey = EncryptionManager.getSecret(response: encryptionResponse, request: encryptionRequest)
-            
             // Prepare data
-            guard let idBytes = encryptionRequest.serverId.data(using: .utf8), let sharedKey = channel.sharedKey, let secKey = EncryptionManager.getSecKey(for: Data(sharedKey)), let encodedSharedKey = EncryptionManager.getEncoded(key: secKey), let publicKey = EncryptionManager.keys?.publicKey, let encodedPublicKey = EncryptionManager.getEncoded(key: publicKey) else {
+            guard let sharedKey = EncryptionManager.getSecret(response: encryptionResponse, request: encryptionRequest), let idBytes = encryptionRequest.serverId.data(using: .utf8), let secKey = EncryptionManager.getSecKey(for: Data(sharedKey)), let encodedSharedKey = EncryptionManager.getEncoded(key: secKey), let publicKey = EncryptionManager.keys?.publicKey, let encodedPublicKey = EncryptionManager.getEncoded(key: publicKey) else {
                 // Error
                 disconnect(reason: "Failed to authenticate your account!")
                 return
             }
+            
+            // Save shared key
+            channel.sharedKey = sharedKey
+            channel.decoder.iv = sharedKey
+            channel.encoder.iv = sharedKey
             
             // Get the encoded hash
             let encodedHash = CC.digest(Data([UInt8](idBytes) + [UInt8](encodedSharedKey) + [UInt8](encodedPublicKey)), alg: .sha1).toSignedHexString()

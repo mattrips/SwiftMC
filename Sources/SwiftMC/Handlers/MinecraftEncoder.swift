@@ -30,10 +30,12 @@ class MinecraftEncoder: MessageToByteEncoder {
     // Configuration for encoding
     var channel: ChannelWrapper?
     var server: Bool
+    var iv: [UInt8]
     
     // Initializer
     init(server: Bool) {
         self.server = server
+        self.iv = []
     }
     
     func encode(data: Packet, out: inout ByteBuffer) throws {
@@ -83,11 +85,13 @@ class MinecraftEncoder: MessageToByteEncoder {
     // Encryption encoder
     func encryptionEncoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
         if from.readableBytes > 0 {
-            if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let encrypted = try? CC.crypt(.encrypt, blockMode: .cfb8, algorithm: .aes, padding: .noPadding, data: Data(bytes), key: Data(sharedKey), iv: Data(sharedKey)) {
+            if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let encrypted = try? CC.crypt(.encrypt, blockMode: .cfb8, algorithm: .aes, padding: .noPadding, data: Data(bytes), key: Data(sharedKey), iv: Data(iv)) {
                 // Encrypt data with given key
                 out.writeBytes([UInt8](encrypted))
-                print("===== Raw: " + bytes.map({ String(format: "%02hhx", $0) }).joined(separator: " "))
-                print("Encrypted: " + encrypted.map({ String(format: "%02hhx", $0) }).joined(separator: " "))
+                
+                // Update IV
+                self.iv = iv + encrypted
+                self.iv.removeFirst(encrypted.count)
             } else {
                 // Just send data
                 out.writeBuffer(&from)

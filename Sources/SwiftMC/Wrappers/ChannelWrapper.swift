@@ -30,6 +30,7 @@ public class ChannelWrapper: Player {
     var threshold: Int32 = -1
     var closed: Bool = false
     var closing: Bool = false
+    var promise: EventLoopPromise<Void>?
     
     // Other channels
     var remoteChannel: ChannelWrapper?
@@ -71,7 +72,7 @@ public class ChannelWrapper: Player {
         self.handler?.handler?.connected(channel: self)
     }
     
-    func send(packet: Packet) {
+    func send(packet: Packet, newProtocol: Prot? = nil, threshold: Int32? = nil) {
         if !closed {
             // Check packet type
             if packet as? Login != nil {
@@ -92,7 +93,31 @@ public class ChannelWrapper: Player {
             }
             
             // Send packet
-            channel.writeAndFlush(packet, promise: nil)
+            let newPromise = channel.eventLoop.makePromise(of: Void.self)
+            let send = {
+                // Packet content
+                self.channel.writeAndFlush(packet, promise: newPromise)
+                
+                // Update threshold
+                if let threshold = threshold {
+                    self.threshold = threshold
+                }
+                
+                // Protocol switching
+                if let newProtocol = newProtocol {
+                    self.prot = newProtocol
+                }
+            }
+            if let promise = promise {
+                // After current waiting list
+                promise.futureResult.whenComplete { _ in
+                    send()
+                }
+            } else {
+                // Now
+                send()
+            }
+            self.promise = newPromise
         }
     }
     
