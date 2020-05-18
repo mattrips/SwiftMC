@@ -47,7 +47,7 @@ struct Server: ParsableCommand {
             // Initialize a server
             let server = SwiftMC(configuration:
                 Configuration(protocolVersion: version, port: port ?? 25565)
-                    .with(mode: mode == "online" ? .online : mode == "offline" ? .offline : .auto)
+                    .with(mode: mode == "auto" ? .auto : mode == "offline" ? .offline : .online)
                     .with(slots: slots ?? 42)
                     .with(motd: motd ?? "A SwiftMC Server")
                     .enable(debug: debug ?? false)
