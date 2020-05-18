@@ -26,12 +26,14 @@ class RemoteWorld: WorldProtocol {
     let server: SwiftMC
     let host: String
     let port: Int
+    let ipForward: Bool
     
     // Initialize a remote world
-    init(server: SwiftMC, host: String, port: Int) {
+    init(server: SwiftMC, host: String, port: Int, ipForward: Bool = false) {
         self.server = server
         self.host = host
         self.port = port
+        self.ipForward = ipForward
     }
     
     // Connect a client
@@ -40,8 +42,19 @@ class RemoteWorld: WorldProtocol {
         if let address = getAddress() {
             // Init the channel
             makeBootstrap(for: client).connect(to: address).whenSuccess() { channel in
+                // Prepare handshake
+                var host = self.host
+                
+                // Add ip forward parameters
+                if self.ipForward {
+                    host += "\0\(client.channel.remoteAddress?.ipAddress ?? "")\0\(client.getUUID().replacingOccurrences(of: "-", with: ""))"
+                    if let properties = client.properties, let json = try? JSONSerialization.data(withJSONObject: properties, options: []), let string = String(bytes: json, encoding: .utf8) {
+                        host += "\0\(string)"
+                    }
+                }
+                
                 // Send handshake
-                client.remoteChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: self.host, port: Int16(self.port), requestedProtocol: 2))
+                client.remoteChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: host, port: Int16(self.port), requestedProtocol: 2))
                 
                 // Change protocol
                 client.remoteChannel?.prot = .LOGIN
@@ -97,8 +110,15 @@ class RemoteWorld: WorldProtocol {
             return
         }
         if let kick = packet as? Kick {
+            // Check if kick reason is because if forward
+            if kick.message.contains("IP forwarding") {
+                // Reconnect using ip forwarding
+                client.goTo(world: RemoteWorld(server: server, host: host, port: port, ipForward: true))
+                return
+            }
+            
             // Reconnect to default server, if not self
-            if let main = client.server.worlds.first/*, main != self*/ {
+            if let main = client.server.worlds.first, main.getName() != getName() {
                 client.goTo(world: main)
                 client.sendMessage(message: ChatColor.red + "Disconnected: \(ChatMessage.decode(from: kick.message)?.toString() ?? "No reason")")
                 return
