@@ -26,14 +26,12 @@ class RemoteWorld: WorldProtocol {
     let server: SwiftMC
     let host: String
     let port: Int
-    let ipForward: Bool
     
     // Initialize a remote world
-    init(server: SwiftMC, host: String, port: Int, ipForward: Bool = false) {
+    init(server: SwiftMC, host: String, port: Int) {
         self.server = server
         self.host = host
         self.port = port
-        self.ipForward = ipForward
     }
     
     // Connect a client
@@ -42,15 +40,10 @@ class RemoteWorld: WorldProtocol {
         if let address = getAddress() {
             // Init the channel
             makeBootstrap(for: client).connect(to: address).whenSuccess() { channel in
-                // Prepare handshake
-                var host = self.host
-                
-                // Add ip forward parameters
-                if self.ipForward {
-                    host += "\0\(client.channel.remoteAddress?.ipAddress ?? "")\0\(client.getUUID().replacingOccurrences(of: "-", with: ""))"
-                    if let properties = client.properties, let json = try? JSONSerialization.data(withJSONObject: properties, options: []), let string = String(bytes: json, encoding: .utf8) {
-                        host += "\0\(string)"
-                    }
+                // Prepare host
+                var host = "\(self.host)\0\(client.channel.remoteAddress?.ipAddress ?? "")\0\(client.getUUID().replacingOccurrences(of: "-", with: ""))"
+                if let properties = client.properties, let json = try? JSONSerialization.data(withJSONObject: properties, options: []), let string = String(bytes: json, encoding: .utf8) {
+                    host += "\0\(string)"
                 }
                 
                 // Send handshake
@@ -110,13 +103,6 @@ class RemoteWorld: WorldProtocol {
             return
         }
         if let kick = packet as? Kick {
-            // Check if kick reason is because if forward
-            if kick.message.contains("IP forwarding") {
-                // Reconnect using ip forwarding
-                client.goTo(world: RemoteWorld(server: server, host: host, port: port, ipForward: true))
-                return
-            }
-            
             // Reconnect to default server, if not self
             if let main = client.server.worlds.first, main.getName() != getName() {
                 client.goTo(world: main)
