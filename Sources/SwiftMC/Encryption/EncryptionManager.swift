@@ -82,11 +82,6 @@ class EncryptionManager {
     }
     
     @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
-    static func getSecKey(for data: Data) -> SecKey? {
-        return SecKeyCreateFromData([kSecAttrKeyType as String: kSecAttrKeyTypeAES] as CFDictionary, data as CFData, nil)
-    }
-    
-    @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
     static func encrypt(content: CFData, publicKey: SecKey, usingAlgorithm: SecKeyAlgorithm) -> CFData? {
         var status = Unmanaged<CFError>?.init(nilLiteral: ())
             
