@@ -20,6 +20,7 @@
 import Foundation
 import Security
 import CommonCrypto
+import SwCrypt
 
 class EncryptionManager {
     
@@ -37,17 +38,22 @@ class EncryptionManager {
         return nil
     }()
     
-    // Get attributes for a key
-    static func getEncoded(key: SecKey) -> Data? {
-        if #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *), let pubAttributes = SecKeyCopyAttributes(key) as? [String: Any] {
-            return pubAttributes[kSecValueData as String] as? Data
+    // Get data for a key
+    @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
+    static func getData(for key: SecKey) -> Data? {
+        if let data = SecKeyCopyExternalRepresentation(key, nil) {
+            let pem = SwKeyConvert.PublicKey.derToPKCS8PEM(data as Data)
+            return Data(base64Encoded: pem.split(separator: "\n").dropFirst().dropLast().joined())
         }
         return nil
     }
     
     // Check if encryption is supported
     static func supportsEncryption() -> Bool {
-        return keys != nil
+        if #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *) {
+            return keys != nil
+        }
+        return false
     }
     
     // Generate an encryption request
@@ -58,9 +64,9 @@ class EncryptionManager {
         
         // Public key
         var publicKey = [UInt8]()
-        if let key = keys?.publicKey, let encoded = getEncoded(key: key) {
+        if let key = keys?.publicKey, let data = getData(for: key) {
             // Add key info
-            publicKey.append(contentsOf: [UInt8](encoded))
+            publicKey.append(contentsOf: [UInt8](data))
         }
         
         // Verify token
