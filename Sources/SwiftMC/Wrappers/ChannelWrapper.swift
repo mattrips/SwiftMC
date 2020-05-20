@@ -48,11 +48,16 @@ public class ChannelWrapper: Player {
     
     // Player related
     var receivedLogin: Bool = false
+    var onlineMode: Bool = false
     var lastDimmension: Int32?
     var properties: [[String: Any]]?
     var name: String?
     var uuid: String?
+    var accessToken: String?
     var world: WorldProtocol?
+    
+    // Plugin message channels
+    var pluginMessageChannels = [String]()
     
     init(session: String, server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder, prot: Prot, protocolVersion: Int32) {
         self.session = session
@@ -72,7 +77,7 @@ public class ChannelWrapper: Player {
         self.handler?.handler?.connected(channel: self)
     }
     
-    func send(packet: Packet, newProtocol: Prot? = nil, threshold: Int32? = nil) {
+    func send(packet: Packet, newProtocol: Prot? = nil, threshold: Int32? = nil, sharedKey: [UInt8]? = nil) {
         if !closed {
             // Check packet type
             if packet as? Login != nil {
@@ -81,6 +86,12 @@ public class ChannelWrapper: Player {
                     return
                 }
                 receivedLogin = true
+            }
+            if let pluginMessage = packet as? PluginMessage {
+                if !pluginMessageChannels.contains(pluginMessage.tag) && pluginMessage.tag != "minecraft:register" && pluginMessage.tag != "REGISTER" {
+                    // Don't send the message
+                    return
+                }
             }
             
             // Check for debug
@@ -106,6 +117,13 @@ public class ChannelWrapper: Player {
                 // Protocol switching
                 if let newProtocol = newProtocol {
                     self.prot = newProtocol
+                }
+                
+                // Shared key registration
+                if let sharedKey = sharedKey {
+                    self.sharedKey = sharedKey
+                    self.decoder.iv = sharedKey
+                    self.encoder.iv = sharedKey
                 }
             }
             if let promise = promise {
@@ -174,6 +192,14 @@ public class ChannelWrapper: Player {
         } else {
             close()
         }
+    }
+    
+    public func isOnlineMode() -> Bool {
+        return onlineMode
+    }
+    
+    public func setTabListMessage(header: ChatMessage, footer: ChatMessage) {
+        send(packet: PlayerListHeaderFooter(header: header.toJSON() ?? "{}", footer: footer.toJSON() ?? "{}"))
     }
     
 }

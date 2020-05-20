@@ -73,12 +73,30 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x1F)
         ])
         // ...
+        to_client.registerPacket(packetClass: PluginMessage.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x3F),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x18),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x19),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x18),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x19)
+        ])
         to_client.registerPacket(packetClass: Kick.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x40),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x1A),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x1B),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x1A),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x1B)
+        ])
+        // ...
+        to_client.registerPacket(packetClass: PlayerListHeaderFooter.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x47),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x48),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9_4, packetID: 0x47),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12, packetID: 0x49),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x4A),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x4E),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x53),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x54)
         ])
         // ...
         to_server.registerPacket(packetClass: KeepAlive.self, mappings: [
@@ -94,6 +112,15 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12, packetID: 0x03),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x02),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x03)
+        ])
+        // ...
+        to_server.registerPacket(packetClass: PluginMessage.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x17),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x09),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12, packetID: 0x0A),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x09),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x0A),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x0B)
         ])
     }
     static let STATUS = Prot(name: "STATUS") { to_server, to_client in
@@ -121,7 +148,7 @@ class Prot {
         to_client.registerPacket(packetClass: LoginSuccess.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x02)
         ])
-        to_client.registerPacket(packetClass: SetCompresion.self, mappings: [
+        to_client.registerPacket(packetClass: SetCompression.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x03)
         ])
         // ...

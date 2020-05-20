@@ -80,6 +80,12 @@ class EncryptionManager {
     }
     
     @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
+    static func getSecKey(from data: Data) -> SecKey? {
+        let attributes: [String: Any] = [kSecAttrKeyClass as String: kSecAttrKeyClassPublic, kSecAttrKeyType as String: kSecAttrKeyTypeRSA, kSecAttrKeySizeInBits as String: 1024]
+        return SecKeyCreateWithData(data as CFData, attributes as CFDictionary, nil)
+    }
+    
+    @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
     static func getSecret(response: EncryptionResponse, request: EncryptionRequest) -> [UInt8]? {
         if let privateKey = keys?.privateKey, let decrypted = decrypt(privateKey: privateKey, content: Data(response.verifyToken) as CFData, usingAlgorithm: .rsaEncryptionPKCS1) as Data?, [UInt8](decrypted) == request.verifyToken, let secret = decrypt(privateKey: privateKey, content: Data(response.sharedSecret) as CFData, usingAlgorithm: .rsaEncryptionPKCS1) as Data? {
             return [UInt8](secret)

@@ -20,7 +20,7 @@
 import Foundation
 import NIO
 
-class SetCompresion: Packet {
+class SetCompression: Packet {
     
     var threshold: Int32
     
@@ -41,7 +41,7 @@ class SetCompresion: Packet {
     }
     
     func toString() -> String {
-        return "SetCompresion(threshold: \(threshold))"
+        return "SetCompression(threshold: \(threshold))"
     }
     
 }

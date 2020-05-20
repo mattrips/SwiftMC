@@ -57,6 +57,9 @@ class GameHandler: PacketHandler {
     
     func handle(packet: Packet) {
         // Check packet type
+        if let pluginMessage = packet as? PluginMessage {
+            self.handle(pluginMessage: pluginMessage)
+        }
         if let chat = packet as? Chat {
             if self.handle(chat: chat) {
                 return
@@ -66,6 +69,39 @@ class GameHandler: PacketHandler {
         // Foward packets to world
         if let channel = channel, let world = channel.world {
             world.handle(packet: packet, for: channel)
+        }
+    }
+    
+    func handle(pluginMessage: PluginMessage) {
+        // Get channel
+        if let channel = channel {
+            // Check for a register
+            if (pluginMessage.tag == "minecraft:register" || pluginMessage.tag == "REGISTER"), let string = String(bytes: Data(pluginMessage.data), encoding: .utf8) {
+                // Iterate registered channels
+                for pluginChannel in string.split(separator: "\0") {
+                    // Save the registered channels
+                    channel.pluginMessageChannels.append(String(pluginChannel))
+                    
+                    // If the channel is a SwiftMC channel
+                    if pluginChannel.starts(with: "swiftmc:") {
+                        // Log it
+                        channel.server.log(ChatMessage(text: "\(channel.getName()) registered plugin message channel \(pluginChannel)"))
+                        
+                        // Check for SwiftMC:Premium channel
+                        if pluginChannel == "swiftmc:premium" {
+                            // Send message to ask for the access token
+                            channel.send(packet: PluginMessage(tag: "swiftmc:premium", data: [0x01]))
+                        }
+                    }
+                }
+            }
+            
+            // Check for a SwiftMC:Premium message
+            var buffer = ByteBuffer(ByteBufferView(pluginMessage.data))
+            if pluginMessage.tag == "swiftmc:premium" && buffer.readableBytes >= 2 && buffer.readBytes(length: 1)?.first == 0x02 {
+                // Read the token
+                channel.accessToken = buffer.readVarString()
+            }
         }
     }
     

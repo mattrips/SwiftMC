@@ -19,6 +19,7 @@
 
 import Foundation
 import NIO
+import SwCrypt
 
 class RemoteWorld: WorldProtocol {
     
@@ -76,43 +77,100 @@ class RemoteWorld: WorldProtocol {
     // Handle a packet from the remote world
     func remoteHandle(packet: Packet, for client: ChannelWrapper) {
         // Check packet type
-        if let setCompresion = packet as? SetCompresion {
-            // Set threshold
-            client.remoteChannel?.threshold = setCompresion.threshold
+        if let setCompression = packet as? SetCompression {
+            remoteHandle(setCompression: setCompression, for: client)
+            return
+        }
+        if let encryptionRequest = packet as? EncryptionRequest {
+            remoteHandle(encryptionRequest: encryptionRequest, for: client)
             return
         }
         if let loginSuccess = packet as? LoginSuccess {
-            // Store success and change to game protocol
-            client.remoteChannel?.name = loginSuccess.username
-            client.remoteChannel?.uuid = loginSuccess.uuid
-            client.remoteChannel?.prot = .GAME
+            remoteHandle(loginSuccess: loginSuccess, for: client)
             return
         }
         if let login = packet as? Login, client.receivedLogin {
-            // Send an immediate respawn if required
-            if client.protocolVersion >= ProtocolConstants.minecraft_1_15 {
-                client.send(packet: GameState(reason: GameState.immediate_respawn, value: login.normalRespawn ? 0 : 1))
-            }
-            
-            // Convert to respawn packet
-            if client.lastDimmension == login.dimension {
-                client.send(packet: Respawn(dimension: login.dimension >= 0 ? -1 : 0, hashedSeed: login.seed, difficulty: login.difficulty, gameMode: login.gameMode, levelType: login.levelType))
-            }
-            client.send(packet: Respawn(dimension: login.dimension, hashedSeed: login.seed, difficulty: login.difficulty, gameMode: login.gameMode, levelType: login.levelType))
-            client.lastDimmension = login.dimension
+            remoteHandle(login: login, for: client)
             return
         }
         if let kick = packet as? Kick {
-            // Reconnect to default server, if not self
-            if let main = client.server.worlds.first, main.getName() != getName() {
-                client.goTo(world: main)
-                client.sendMessage(message: ChatColor.red + "Disconnected: \(ChatMessage.decode(from: kick.message)?.toString() ?? "No reason")")
+            if remoteHandle(kick: kick, for: client) {
                 return
             }
         }
         
         // Foward to client
         client.send(packet: packet)
+    }
+    
+    func remoteHandle(setCompression: SetCompression, for client: ChannelWrapper) {
+        // Set threshold
+        client.remoteChannel?.threshold = setCompression.threshold
+    }
+    
+    func remoteHandle(encryptionRequest: EncryptionRequest, for client: ChannelWrapper) {
+        // Check that our client is supporting premium
+        guard client.onlineMode, let accessToken = client.accessToken, #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *) else {
+            remoteHandle(packet: Kick(message: ChatMessage(text: "Online mode is required on this server. Be sure to be in online mode and have installed SwiftMCPremium to allow client communication.").toJSON() ?? "{}"), for: client)
+            return
+        }
+        
+        // Generate a shared key
+        var sharedKey = [UInt8]()
+        for _ in 0 ..< 16 {
+            sharedKey.append(UInt8.random(in: 0 ..< 255))
+        }
+        
+        // Get idBytes
+        var idBytes = [UInt8]()
+        if !encryptionRequest.serverId.isEmpty, let idData = encryptionRequest.serverId.data(using: .utf8) {
+            idBytes = [UInt8](idData)
+        }
+        
+        // Get the encoded hash
+        let encodedHash = CC.digest(Data(idBytes + sharedKey + encryptionRequest.publicKey), alg: .sha1).toSignedHexString()
+        
+        // Verify identity with Mojang
+        MojangJoin(accessToken: accessToken, selectedProfile: client.getUUID().replacingOccurrences(of: "-", with: ""), serverId: encodedHash).fetch(in: client.server.eventLoopGroup) { result in
+            if result, let secKey = EncryptionManager.getSecKey(from: Data(encryptionRequest.publicKey)), let encodedKey = EncryptionManager.encrypt(content: Data(sharedKey) as CFData, publicKey: secKey, usingAlgorithm: .rsaEncryptionPKCS1), let encodedToken = EncryptionManager.encrypt(content: Data(encryptionRequest.verifyToken) as CFData, publicKey: secKey, usingAlgorithm: .rsaEncryptionPKCS1) {
+                // Client is authentificated
+                client.remoteChannel?.send(packet: EncryptionResponse(sharedSecret: [UInt8](encodedKey as Data), verifyToken: [UInt8](encodedToken as Data)), sharedKey: sharedKey)
+            } else {
+                // Invalid session
+                self.remoteHandle(packet: Kick(message: ChatMessage(text: "Invalid session!").toJSON() ?? "{}"), for: client)
+            }
+        }
+    }
+    
+    func remoteHandle(loginSuccess: LoginSuccess, for client: ChannelWrapper) {
+        // Store success and change to game protocol
+        client.remoteChannel?.name = loginSuccess.username
+        client.remoteChannel?.uuid = loginSuccess.uuid
+        client.remoteChannel?.prot = .GAME
+    }
+    
+    func remoteHandle(login: Login, for client: ChannelWrapper) {
+        // Send an immediate respawn if required
+        if client.protocolVersion >= ProtocolConstants.minecraft_1_15 {
+            client.send(packet: GameState(reason: GameState.immediate_respawn, value: login.normalRespawn ? 0 : 1))
+        }
+        
+        // Convert to respawn packet
+        if client.lastDimmension == login.dimension {
+            client.send(packet: Respawn(dimension: login.dimension >= 0 ? -1 : 0, hashedSeed: login.seed, difficulty: login.difficulty, gameMode: login.gameMode, levelType: login.levelType))
+        }
+        client.send(packet: Respawn(dimension: login.dimension, hashedSeed: login.seed, difficulty: login.difficulty, gameMode: login.gameMode, levelType: login.levelType))
+        client.lastDimmension = login.dimension
+    }
+    
+    func remoteHandle(kick: Kick, for client: ChannelWrapper) -> Bool {
+        // Reconnect to default server, if not self
+        if let main = client.server.worlds.first, main.getName() != getName() {
+            client.goTo(world: main)
+            client.sendMessage(message: ChatColor.red + "Disconnected: \(ChatMessage.decode(from: kick.message)?.toString() ?? "No reason")")
+            return true
+        }
+        return false
     }
     
     // Ping server

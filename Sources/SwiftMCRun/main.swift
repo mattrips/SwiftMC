@@ -53,20 +53,26 @@ struct Server: ParsableCommand {
                     .enable(debug: debug ?? false)
             )
             
-            // Add a default world
-            if let parts = world?.split(separator: ":").map({ String($0) }), parts.count >= 2 {
-                if parts[0] == "local" && parts.count == 2 {
-                    server.loadWorld(world: server.createLocalWorld(name: parts[1]))
-                } else if parts[0] == "remote" && parts.count <= 3 {
-                    if parts.count == 3, let port = Int(parts[2]) {
-                        server.loadWorld(world: server.createRemoteWorld(host: parts[1], port: port))
+            // Add worlds
+            for world in world?.split(separator: ";") ?? [] {
+                let parts = world.split(separator: ":").map({ String($0) })
+                if parts.count >= 2 {
+                    if parts[0] == "local" && parts.count == 2 {
+                        server.loadWorld(world: server.createLocalWorld(name: parts[1]))
+                    } else if parts[0] == "remote" && parts.count <= 3 {
+                        if parts.count == 3, let port = Int(parts[2]) {
+                            server.loadWorld(world: server.createRemoteWorld(host: parts[1], port: port))
+                        } else {
+                            server.loadWorld(world: server.createRemoteWorld(host: parts[1], port: 25565))
+                        }
                     } else {
-                        server.loadWorld(world: server.createRemoteWorld(host: parts[1], port: 25565))
+                        server.loadWorld(world: server.createLocalWorld(name: "world"))
                     }
-                } else {
-                    server.loadWorld(world: server.createLocalWorld(name: "world"))
                 }
-            } else {
+            }
+            
+            // Load default world if empty
+            if server.worlds.isEmpty {
                 server.loadWorld(world: server.createLocalWorld(name: "world"))
             }
             

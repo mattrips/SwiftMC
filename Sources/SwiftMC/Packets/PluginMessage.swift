@@ -20,16 +20,33 @@
 import Foundation
 import NIO
 
-public protocol Player: CommandSender {
+class PluginMessage: Packet {
     
-    func getUUID() -> String
+    var tag: String
+    var data: [UInt8]
     
-    func goTo(world: WorldProtocol)
+    required init() {
+        tag = ""
+        data = []
+    }
     
-    func kick(reason: String)
+    init(tag: String, data: [UInt8]) {
+        self.tag = tag
+        self.data = data
+    }
     
-    func isOnlineMode() -> Bool
+    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        tag = buffer.readVarString() ?? tag
+        data = buffer.readBytes(length: buffer.readableBytes) ?? data
+    }
     
-    func setTabListMessage(header: ChatMessage, footer: ChatMessage)
+    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        buffer.writeVarString(string: tag)
+        buffer.writeBytes(data)
+    }
+    
+    func toString() -> String {
+        return "PluginMessage(tag: \(tag), data: \(data))"
+    }
     
 }

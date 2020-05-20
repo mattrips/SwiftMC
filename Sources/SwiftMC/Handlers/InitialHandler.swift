@@ -184,6 +184,9 @@ class InitialHandler: PacketHandler {
                     channel.uuid = (dict["id"] as? String)?.addSeparatorUUID() ?? channel.uuid
                     channel.properties = dict["properties"] as? [[String: Any]]
                     
+                    // Set as online mode player
+                    channel.onlineMode = true
+                    
                     // End login
                     self.finish()
                 } else if channel.server.mode == .auto {
@@ -209,7 +212,7 @@ class InitialHandler: PacketHandler {
         // Check that name and uuid are set
         if let name = channel?.name, let uuid = channel?.uuid {
             // Enable threshold
-            channel?.send(packet: SetCompresion(threshold: 256), threshold: 256)
+            channel?.send(packet: SetCompression(threshold: 256), threshold: 256)
             
             // Send success packet and switch to game protocol
             channel?.server.log("Authenticating player \(name)... (\(uuid))")
