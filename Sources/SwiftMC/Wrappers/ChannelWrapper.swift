@@ -159,6 +159,17 @@ public class ChannelWrapper: Player {
         }
     }
     
+    func unloadCurrentWorld() {
+        // Disconnect
+        self.world?.disconnect(client: self)
+        
+        // Remove channel for remote worlds
+        self.remoteChannel = nil
+        
+        // Reset the tab list message
+        self.setTabListMessage(header: ChatMessage(text: ""), footer: ChatMessage(text: ""))
+    }
+    
     // Adapters for outside
     
     public func getName() -> String {
@@ -174,9 +185,7 @@ public class ChannelWrapper: Player {
     }
     
     public func goTo(world: WorldProtocol) {
-        self.world?.disconnect(client: self)
-        self.remoteChannel = nil
-        self.setTabListMessage(header: ChatMessage(text: ""), footer: ChatMessage(text: ""))
+        self.unloadCurrentWorld()
         self.world = world
         self.world?.connect(client: self)
     }
