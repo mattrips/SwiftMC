@@ -5,7 +5,7 @@ branches:
 # Set environment variables for the build job  
 env:
   global:
-  - SWIFT_BRANCH=swift-5.2.3-branch
+  - SWIFT_BRANCH=swift-5.2.3-release
   - SWIFT_VERSION=swift-5.2.3-RELEASE
 jobs:
   include:
