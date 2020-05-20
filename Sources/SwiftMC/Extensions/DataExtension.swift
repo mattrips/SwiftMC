@@ -21,6 +21,14 @@ import Foundation
 
 extension Data {
     
+    func bin2hex() -> String {
+        var string = ""
+        for byte in [UInt8](self) {
+            string += String(format: "%02hhx", byte)
+        }
+        return string
+    }
+    
     func toSignedHexString() -> String {
         // Create an empty string
         var result = ""

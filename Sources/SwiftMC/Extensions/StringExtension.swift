@@ -48,20 +48,12 @@ extension String {
         return array
     }
 
-    func bin2hex(_ bin: [UInt8]) -> String {
-        var string = ""
-        for byte in bin {
-            string += String(byte, radix: 16, uppercase: false)
-        }
-        return string
-    }
-
     func getUUID() -> String? {
         if let hash = "OfflinePlayer:\(self)".md5() {
             var bytes = hash.hex2bin()
             bytes[6] = bytes[6] & 0x0F | 0x30
             bytes[8] = bytes[8] & 0x3F | 0x80
-            return bin2hex(bytes).addSeparatorUUID()
+            return Data(bytes).bin2hex().addSeparatorUUID()
         }
         return nil
     }

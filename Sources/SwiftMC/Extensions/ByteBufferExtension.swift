@@ -129,4 +129,15 @@ extension ByteBuffer {
         }.reversed())
     }
     
+    mutating func readUUID() -> String? {
+        if let bytes = readBytes(length: 16) {
+            return Data(bytes).bin2hex().addSeparatorUUID()
+        }
+        return nil
+    }
+    
+    mutating func writeUUID(value: String) {
+        writeBytes(value.replacingOccurrences(of: "-", with: "").hex2bin())
+    }
+    
 }

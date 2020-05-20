@@ -27,12 +27,17 @@ class RemoteWorld: WorldProtocol {
     let server: SwiftMC
     let host: String
     let port: Int
+    let ipForward: Bool
+    
+    // Player infos
+    var playerItems = [PlayerInfo.Item]()
     
     // Initialize a remote world
-    init(server: SwiftMC, host: String, port: Int) {
+    init(server: SwiftMC, host: String, port: Int, ipForward: Bool = false) {
         self.server = server
         self.host = host
         self.port = port
+        self.ipForward = ipForward
     }
     
     // Connect a client
@@ -41,10 +46,15 @@ class RemoteWorld: WorldProtocol {
         if let address = getAddress() {
             // Init the channel
             makeBootstrap(for: client).connect(to: address).whenSuccess() { channel in
-                // Prepare host
-                var host = "\(self.host)\0\(client.channel.remoteAddress?.ipAddress ?? "")\0\(client.getUUID().replacingOccurrences(of: "-", with: ""))"
-                if let properties = client.properties, let json = try? JSONSerialization.data(withJSONObject: properties, options: []), let string = String(bytes: json, encoding: .utf8) {
-                    host += "\0\(string)"
+                // Prepare handshake
+                var host = self.host
+                
+                // Add ip forward parameters
+                if self.ipForward {
+                    host += "\0\(client.channel.remoteAddress?.ipAddress ?? "")\0\(client.getUUID().replacingOccurrences(of: "-", with: ""))"
+                    if let properties = client.properties, let json = try? JSONSerialization.data(withJSONObject: properties, options: []), let string = String(bytes: json, encoding: .utf8) {
+                        host += "\0\(string)"
+                    }
                 }
                 
                 // Send handshake
@@ -63,6 +73,9 @@ class RemoteWorld: WorldProtocol {
     func disconnect(client: ChannelWrapper) {
         // Disconnect from the remote world
         client.remoteChannel?.close()
+        
+        // Clear the tablist for the player
+        client.send(packet: PlayerInfo(action: .remove_player, items: playerItems))
     }
     
     // Handle a packet from the client
@@ -97,6 +110,9 @@ class RemoteWorld: WorldProtocol {
             if remoteHandle(kick: kick, for: client) {
                 return
             }
+        }
+        if let playerInfo = packet as? PlayerInfo {
+            remoteHandle(playerInfo: playerInfo, for: client)
         }
         
         // Foward to client
@@ -164,6 +180,13 @@ class RemoteWorld: WorldProtocol {
     }
     
     func remoteHandle(kick: Kick, for client: ChannelWrapper) -> Bool {
+        // Check if kick reason is because if forward
+        if kick.message.contains("IP forwarding") {
+            // Reconnect using ip forwarding
+            client.goTo(world: RemoteWorld(server: server, host: host, port: port, ipForward: true))
+            return true
+        }
+        
         // Reconnect to default server, if not self
         if let main = client.server.worlds.first, main.getName() != getName() {
             client.goTo(world: main)
@@ -171,6 +194,26 @@ class RemoteWorld: WorldProtocol {
             return true
         }
         return false
+    }
+    
+    func remoteHandle(playerInfo: PlayerInfo, for client: ChannelWrapper) {
+        // Iterate players
+        for item in playerInfo.items {
+            // Get the player
+            let currentPlayer = getPlayer(uuid: item.uuid ?? "")
+            
+            // Check the action
+            if playerInfo.action == .add_player {
+                // Check that player doesn't already exist
+                if currentPlayer == nil {
+                    // Add it
+                    playerItems.append(item)
+                }
+            } else if playerInfo.action == .remove_player {
+                // Remove the player from the list
+                playerItems.removeAll(where: { $0.uuid == item.uuid })
+            }
+        }
     }
     
     // Ping server
@@ -222,6 +265,10 @@ class RemoteWorld: WorldProtocol {
     
     func getType() -> WorldType {
         return .remote
+    }
+    
+    func getPlayers() -> [Player] {
+        return playerItems
     }
     
     func getAddress() -> SocketAddress? {

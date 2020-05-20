@@ -30,6 +30,8 @@ public protocol Player: CommandSender {
     
     func isOnlineMode() -> Bool
     
+    func hasSwiftMCPremium() -> Bool
+    
     func setTabListMessage(header: ChatMessage, footer: ChatMessage)
     
 }

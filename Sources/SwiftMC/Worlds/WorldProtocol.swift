@@ -33,4 +33,22 @@ public protocol WorldProtocol {
     
     func getType() -> WorldType
     
+    func getPlayers() -> [Player]
+    
+}
+
+extension WorldProtocol {
+    
+    public func getPlayer(uuid: String) -> Player? {
+        return getPlayers().filter({ player in
+            return player.getUUID() == uuid
+        }).first
+    }
+    
+    public func getPlayer(name: String) -> Player? {
+        return getPlayers().filter({ player in
+            return player.getName() == name
+        }).first
+    }
+    
 }

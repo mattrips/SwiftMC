@@ -87,12 +87,6 @@ public class ChannelWrapper: Player {
                 }
                 receivedLogin = true
             }
-            if let pluginMessage = packet as? PluginMessage {
-                if !pluginMessageChannels.contains(pluginMessage.tag) && pluginMessage.tag != "minecraft:register" && pluginMessage.tag != "REGISTER" {
-                    // Don't send the message
-                    return
-                }
-            }
             
             // Check for debug
             if server.configuration.debug {
@@ -182,6 +176,7 @@ public class ChannelWrapper: Player {
     public func goTo(world: WorldProtocol) {
         self.world?.disconnect(client: self)
         self.remoteChannel = nil
+        self.setTabListMessage(header: ChatMessage(text: ""), footer: ChatMessage(text: ""))
         self.world = world
         self.world?.connect(client: self)
     }
@@ -196,6 +191,10 @@ public class ChannelWrapper: Player {
     
     public func isOnlineMode() -> Bool {
         return onlineMode
+    }
+    
+    public func hasSwiftMCPremium() -> Bool {
+        return onlineMode && pluginMessageChannels.contains("swiftmc:premium") && accessToken != nil
     }
     
     public func setTabListMessage(header: ChatMessage, footer: ChatMessage) {

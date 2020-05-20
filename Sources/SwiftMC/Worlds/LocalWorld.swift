@@ -69,6 +69,19 @@ class LocalWorld: WorldProtocol {
         let event = PlayerJoinEvent(player: client, message: "\(ChatColor.green)[+] \(ChatColor.yellow)\(client.getName())")
         client.server.fireListeners(for: event)
         broadcast(packet: Chat(message: ChatMessage(text: event.message)))
+        
+        // Send PlayerInfo
+        for player in clients {
+            // Create the packet
+            let packet = PlayerInfo(action: .add_player, items: [PlayerInfo.Item(uuid: player.uuid, username: player.name, properties: player.properties?.map({ properties in
+                properties.map({ property in
+                    property.value as? String ?? ""
+                })
+            }), gamemode: 0, ping: 0, displayname: nil)])
+            
+            // Send it
+            player.getUUID() == client.getUUID() ? broadcast(packet: packet) : client.send(packet: packet)
+        }
     }
     
     func disconnect(client: ChannelWrapper) {
@@ -76,6 +89,15 @@ class LocalWorld: WorldProtocol {
         let event = PlayerQuitEvent(player: client, message: "\(ChatColor.red)[-] \(ChatColor.yellow)\(client.getName())")
         client.server.fireListeners(for: event)
         broadcast(packet: Chat(message: ChatMessage(text: event.message)))
+        
+        // Send PlayerInfo
+        for player in clients {
+            // Create the packet
+            let packet = PlayerInfo(action: .remove_player, items: [PlayerInfo.Item(uuid: player.uuid)])
+            
+            // Send it
+            player.getUUID() == client.getUUID() ? broadcast(packet: packet) : client.send(packet: packet)
+        }
         
         // Remove client from current clients
         clients.removeAll(where: { current in
@@ -107,6 +129,10 @@ class LocalWorld: WorldProtocol {
     
     func getType() -> WorldType {
         return .local
+    }
+    
+    func getPlayers() -> [Player] {
+        return clients
     }
     
     func broadcast(packet: Packet) {
