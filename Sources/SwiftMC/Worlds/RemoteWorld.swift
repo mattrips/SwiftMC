@@ -19,7 +19,7 @@
 
 import Foundation
 import NIO
-import SwCrypt
+import CryptoSwift
 
 class RemoteWorld: WorldProtocol {
     
@@ -144,7 +144,7 @@ class RemoteWorld: WorldProtocol {
         }
         
         // Get the encoded hash
-        let encodedHash = CC.digest(Data(idBytes + sharedKey + encryptionRequest.publicKey), alg: .sha1).toSignedHexString()
+        let encodedHash = Data(Digest.sha1(idBytes + sharedKey + encryptionRequest.publicKey)).toSignedHexString()
         
         // Verify identity with Mojang
         MojangJoin(accessToken: accessToken, selectedProfile: client.getUUID().replacingOccurrences(of: "-", with: ""), serverId: encodedHash).fetch(in: client.server.eventLoopGroup) { result in

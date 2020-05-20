@@ -1,5 +1,6 @@
 # SwiftMC
 
+[![Build Status](https://travis-ci.com/GroupeMINASTE/SwiftMC.svg?token=oK8ceAyYNdbxPjHsz2xq&branch=master)](https://travis-ci.com/GroupeMINASTE/SwiftMC)
 [![License](https://img.shields.io/github/license/GroupeMINASTE/SwiftMC)](LICENSE)
 [![Issues](https://img.shields.io/github/issues/GroupeMINASTE/SwiftMC)]()
 [![Pull Requests](https://img.shields.io/github/issues-pr/GroupeMINASTE/SwiftMC)]()
@@ -8,6 +9,8 @@
 [![Open Source Helpers](https://www.codetriage.com/groupeminaste/swiftmc/badges/users.svg)](https://www.codetriage.com/groupeminaste/swiftmc)
 
 A Minecraft server and proxy written from scratch in Swift.
+
+> **NOTICE**: This swift package is in active development, so the code may build with warnings or errors
 
 ## Installation (run a server)
 

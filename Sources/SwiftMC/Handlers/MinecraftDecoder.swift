@@ -20,7 +20,7 @@
 import Foundation
 import NIO
 import CompressNIO
-import SwCrypt
+import CommonCrypto
 
 class MinecraftDecoder: ByteToMessageDecoder {
     
@@ -130,8 +130,9 @@ class MinecraftDecoder: ByteToMessageDecoder {
     
     // Encryption encoder
     func encryptionDecoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
+        // AES(key: sharedKey, blockMode: CFB(iv: iv), padding: .noPadding).decrypt(bytes)
         if from.readableBytes > 0 {
-            if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let decrypted = try? CC.crypt(.decrypt, blockMode: .cfb8, algorithm: .aes, padding: .noPadding, data: Data(bytes), key: Data(sharedKey), iv: Data(iv)) {
+            if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let decrypted = EncryptionManager.crypt(CCOperation(kCCDecrypt), data: Data(bytes), key: Data(sharedKey), iv: Data(iv)) {
                 // Decrypt data with given key
                 out.writeBytes([UInt8](decrypted))
                 

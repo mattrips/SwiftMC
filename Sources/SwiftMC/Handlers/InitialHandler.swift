@@ -19,7 +19,7 @@
 
 import Foundation
 import NIO
-import SwCrypt
+import CryptoSwift
 
 class InitialHandler: PacketHandler {
     
@@ -173,7 +173,7 @@ class InitialHandler: PacketHandler {
             channel.encoder.iv = sharedKey
             
             // Get the encoded hash
-            let encodedHash = CC.digest(Data([UInt8](idBytes) + [UInt8](sharedKey) + [UInt8](publicKeyData)), alg: .sha1).toSignedHexString()
+            let encodedHash = Data(Digest.sha1([UInt8](idBytes) + [UInt8](sharedKey) + [UInt8](publicKeyData))).toSignedHexString()
             
             // Complete the request
             MojangHasJoined(username: username, serverId: encodedHash).fetch(in: channel.server.eventLoopGroup) { dict in

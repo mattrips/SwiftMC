@@ -20,7 +20,7 @@
 import Foundation
 import Security
 import CommonCrypto
-import SwCrypt
+import CryptoSwift
 
 class EncryptionManager {
     
@@ -42,8 +42,7 @@ class EncryptionManager {
     @available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *)
     static func getData(for key: SecKey) -> Data? {
         if let data = SecKeyCopyExternalRepresentation(key, nil) {
-            let pem = SwKeyConvert.PublicKey.derToPKCS8PEM(data as Data)
-            return Data(base64Encoded: pem.split(separator: "\n").dropFirst().dropLast().joined())
+            return addDERHeader(data as Data)
         }
         return nil
     }
@@ -118,6 +117,126 @@ class EncryptionManager {
         }
                     
         return decrypted
+    }
+    
+    static func addDERHeader(_ derKey: Data) -> Data {
+        var result = Data()
+
+        let encodingLength: Int = encodedOctets(derKey.count + 1).count
+        let OID: [UInt8] = [0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00]
+
+        var builder: [UInt8] = []
+
+        // ASN.1 SEQUENCE
+        builder.append(0x30)
+
+        // Overall size, made of OID + bitstring encoding + actual key
+        let size = OID.count + 2 + encodingLength + derKey.count
+        let encodedSize = encodedOctets(size)
+        builder.append(contentsOf: encodedSize)
+        result.append(builder, count: builder.count)
+        result.append(OID, count: OID.count)
+        builder.removeAll(keepingCapacity: false)
+
+        builder.append(0x03)
+        builder.append(contentsOf: encodedOctets(derKey.count + 1))
+        builder.append(0x00)
+        result.append(builder, count: builder.count)
+
+        // Actual key bytes
+        result.append(derKey)
+
+        return result
+    }
+    
+    static func encodedOctets(_ int: Int) -> [UInt8] {
+        // Short form
+        if int < 128 {
+            return [UInt8(int)]
+        }
+
+        // Long form
+        let i = (int / 256) + 1
+        var len = int
+        var result: [UInt8] = [UInt8(i + 0x80)]
+
+        for _ in 0 ..< i {
+            result.insert(UInt8(len & 0xFF), at: 1)
+            len = len >> 8
+        }
+
+        return result
+    }
+    
+    // TEMP CODE UNTIL CRYPTOSWIFT ADDS SUPPORT FOR CFB8:
+    
+    public static func crypt(_ opMode: CCMode, data: Data, key: Data, iv: Data) -> Data? {
+        var cryptor: CCCryptorRef? = nil
+        var status = withUnsafePointers(iv, key, { ivBytes, keyBytes in
+            return CCCryptorCreateWithMode(
+                opMode, CCMode(kCCModeCFB8),
+                CCAlgorithm(kCCAlgorithmAES), 0,
+                ivBytes, keyBytes, key.count,
+                nil, 0, 0,
+                CCModeOptions(), &cryptor)
+        })
+
+        guard status == noErr else { return nil }
+
+        defer { _ = CCCryptorRelease(cryptor!) }
+
+        let needed = CCCryptorGetOutputLength(cryptor!, data.count, true)
+        var result = Data(count: needed)
+        let rescount = result.count
+        var updateLen: size_t = 0
+        status = withUnsafePointers(data, &result, { dataBytes, resultBytes in
+            return CCCryptorUpdate(
+                cryptor!,
+                dataBytes, data.count,
+                resultBytes, rescount,
+                &updateLen)
+        })
+        guard status == noErr else { return nil }
+
+        var finalLen: size_t = 0
+        status = result.withUnsafeMutableBytes { resultBytes in
+            return CCCryptorFinal(
+                cryptor!,
+                resultBytes + updateLen,
+                rescount - updateLen,
+                &finalLen)
+        }
+        guard status == noErr else { return nil }
+
+        result.count = updateLen + finalLen
+        return result
+    }
+    
+    static fileprivate func withUnsafePointers<A0, A1, Result>(
+        _ arg0: Data,
+        _ arg1: Data,
+        _ body: (
+        UnsafePointer<A0>, UnsafePointer<A1>) throws -> Result
+        ) rethrows -> Result {
+        return try arg0.withUnsafeBytes { p0 in
+            return try arg1.withUnsafeBytes { p1 in
+                return try body(p0, p1)
+            }
+        }
+    }
+    
+    static fileprivate func withUnsafePointers<A0, A1, Result>(
+        _ arg0: Data,
+        _ arg1: inout Data,
+        _ body: (
+            UnsafePointer<A0>,
+            UnsafeMutablePointer<A1>) throws -> Result
+        ) rethrows -> Result {
+        return try arg0.withUnsafeBytes { p0 in
+            return try arg1.withUnsafeMutableBytes { p1 in
+                return try body(p0, p1)
+            }
+        }
     }
     
 }
