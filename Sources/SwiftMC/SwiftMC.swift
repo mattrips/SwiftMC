@@ -79,7 +79,7 @@ public class SwiftMC: CommandSender {
         log("Loading worlds...")
         
         // Start a timer for KeepAlive
-        eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(1), delay: TimeAmount.seconds(1)) { task in
+        eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(1), delay: TimeAmount.seconds(1)) { _ in
             // Send keep alive to connected clients
             self.players.filter { player in
                 if let channel = player as? ChannelWrapper {
@@ -305,7 +305,7 @@ public class SwiftMC: CommandSender {
         var args = command.split(separator: " ").map {
             String($0)
         }
-        if args.count > 0 {
+        if !args.isEmpty {
             // Get command name
             let name = args.removeFirst().lowercased()
             

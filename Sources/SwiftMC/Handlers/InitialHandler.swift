@@ -73,7 +73,7 @@ class InitialHandler: PacketHandler {
             }
             
             // Remove . at the end (dns record)
-            if handshake.host.count > 0 && handshake.host.last == "." {
+            if !handshake.host.isEmpty && handshake.host.last == "." {
                 let _ = handshake.host.removeLast()
             }
             

@@ -22,7 +22,7 @@ import Foundation
 class Prot {
     
     // Register protocols
-    static let HANDSHAKE = Prot(name: "HANDSHAKE") { to_server, to_client in
+    static let HANDSHAKE = Prot(name: "HANDSHAKE") { to_server, _ in
         to_server.registerPacket(packetClass: Handshake.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x00)
         ])

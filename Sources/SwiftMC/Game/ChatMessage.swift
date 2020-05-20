@@ -80,7 +80,7 @@ public class ChatMessage: Codable {
                     i += 1
                     continue
                 }
-                if builder.count > 0 {
+                if !builder.isEmpty {
                     let old = component
                     component = ChatMessage(from: old)
                     old.text = builder
