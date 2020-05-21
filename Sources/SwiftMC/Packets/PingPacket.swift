@@ -20,23 +20,23 @@
 import Foundation
 import NIO
 
-class PingPacket: Packet {
+public class PingPacket: Packet {
     
-    var time: Int64
+    public var time: Int64
     
-    required init() {
-        time = -1
+    public required init() {
+        time = 0
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         self.time = buffer.readInteger(as: Int64.self) ?? self.time
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeInteger(time)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "PingPacket(time: \(time))"
     }
     

@@ -20,7 +20,6 @@ let package = Package(
         .package(url: "https://github.com/adam-fowler/compress-nio.git", from: "0.0.1"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.0.0"),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.0.0"),
-        .package(url: "https://github.com/anli5005/SwiftNBT.git", from: "0.0.1"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.0.1")
     ],
     targets: [
@@ -32,8 +31,7 @@ let package = Package(
                 .product(name: "NIO", package: "swift-nio"),
                 .product(name: "CompressNIO", package: "compress-nio"),
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
-                .product(name: "CryptoSwift", package: "CryptoSwift"),
-                .product(name: "SwiftNBT", package: "SwiftNBT")
+                .product(name: "CryptoSwift", package: "CryptoSwift")
             ]),
         .target(
             name: "SwiftMCRun",

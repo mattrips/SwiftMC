@@ -22,7 +22,7 @@ import CommonCrypto
 
 extension String {
 
-    func md5() -> String? {
+    public func md5() -> String? {
         let length = Int(CC_MD5_DIGEST_LENGTH)
         var digest = [UInt8](repeating: 0, count: length)
 
@@ -38,7 +38,7 @@ extension String {
         }
     }
 
-    func hex2bin() -> [UInt8] {
+    public func hex2bin() -> [UInt8] {
         var hex = self
         var array = [UInt8]()
         while hex.count >= 2 {
@@ -48,7 +48,7 @@ extension String {
         return array
     }
 
-    func getUUID() -> String? {
+    public func getUUID() -> String? {
         if let hash = "OfflinePlayer:\(self)".md5() {
             var bytes = hash.hex2bin()
             bytes[6] = bytes[6] & 0x0F | 0x30
@@ -58,7 +58,7 @@ extension String {
         return nil
     }
     
-    func addSeparatorUUID() -> String {
+    public func addSeparatorUUID() -> String {
         var components = [String]()
         components.append(String(self[startIndex ..< index(startIndex, offsetBy: 8)]))
         components.append(String(self[index(startIndex, offsetBy: 8) ..< index(startIndex, offsetBy: 12)]))
@@ -66,6 +66,10 @@ extension String {
         components.append(String(self[index(startIndex, offsetBy: 16) ..< index(startIndex, offsetBy: 20)]))
         components.append(String(self[index(startIndex, offsetBy: 20) ..< endIndex]))
         return components.joined(separator: "-")
+    }
+    
+    public func indent() -> String {
+        split(separator: "\n").map({ "\t" + $0 }).joined(separator: "\n")
     }
     
     public static func + (lhs: String, rhs: ChatColor) -> String {

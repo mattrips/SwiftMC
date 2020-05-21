@@ -20,33 +20,39 @@
 import Foundation
 import NIO
 
-public class EncryptionResponse: Packet {
+public class NBTCompound: NBTTag {
     
-    public var sharedSecret: [UInt8]
-    public var verifyToken: [UInt8]
+    public var name: String?
+    public var values: [NBTTag]
     
     public required init() {
-        sharedSecret = []
-        verifyToken = []
+        values = []
     }
     
-    public init(sharedSecret: [UInt8], verifyToken: [UInt8]) {
-        self.sharedSecret = sharedSecret
-        self.verifyToken = verifyToken
+    public init(values: [NBTTag]) {
+        self.values = values
     }
     
-    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        sharedSecret = buffer.readArray() ?? sharedSecret
-        verifyToken = buffer.readArray() ?? verifyToken
+    public func readTag(from buffer: inout ByteBuffer) {
+        repeat {
+            values.append(NBTRegistry.readTag(in: &buffer))
+        } while !(values.last is NBTEnd)
+        values.removeLast()
     }
     
-    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        buffer.writeArray(value: sharedSecret)
-        buffer.writeArray(value: verifyToken)
+    public func writeTag(to buffer: inout ByteBuffer) {
+        for value in values {
+            NBTRegistry.writeTag(tag: value, to: &buffer)
+        }
+        NBTRegistry.writeTag(tag: NBTEnd(), to: &buffer)
     }
     
     public func toString() -> String {
-        return "EncryptionResponse(sharedSecret: \(sharedSecret), verifyToken: \(verifyToken))"
+        return "NBTCompound(name: \(name ?? "NONE"), values:\n\(values.map({ $0.toString() }).joined(separator: "\n").indent())\n)"
+    }
+    
+    public subscript(name: String) -> NBTTag? {
+        return values.filter({ $0.name == name }).first
     }
     
 }

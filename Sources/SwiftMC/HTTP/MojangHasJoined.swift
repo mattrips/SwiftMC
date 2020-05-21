@@ -21,17 +21,17 @@ import Foundation
 import NIO
 import AsyncHTTPClient
 
-class MojangHasJoined {
+public class MojangHasJoined {
     
     let username: String
     let serverId: String
     
-    init(username: String, serverId: String) {
+    public init(username: String, serverId: String) {
         self.username = username
         self.serverId = serverId
     }
     
-    func fetch(in eventLoopGroup: EventLoopGroup, completionHandler: @escaping ([String: Any]?) -> ()) {
+    public func fetch(in eventLoopGroup: EventLoopGroup, completionHandler: @escaping ([String: Any]?) -> ()) {
         let client = HTTPClient(eventLoopGroupProvider: .shared(eventLoopGroup))
         
         var urlComponents = URLComponents()

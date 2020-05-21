@@ -57,6 +57,14 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x3B)
         ])
         // ...
+        to_client.registerPacket(packetClass: MapChunk.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x21),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x20),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x22),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x21),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_15, packetID: 0x22)
+        ])
+        // ...
         to_client.registerPacket(packetClass: PlayerInfo.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x38),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x2D),

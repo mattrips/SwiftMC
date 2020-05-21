@@ -171,7 +171,7 @@ class EncryptionManager {
     // TEMP CODE UNTIL CRYPTOSWIFT ADDS SUPPORT FOR CFB8:
     
     public static func crypt(_ opMode: CCMode, data: Data, key: Data, iv: Data) -> Data? {
-        var cryptor: CCCryptorRef? = nil
+        var cryptor: CCCryptorRef?
         var status = withUnsafePointers(iv, key, { ivBytes, keyBytes in
             return CCCryptorCreateWithMode(
                 opMode, CCMode(kCCModeCFB8),

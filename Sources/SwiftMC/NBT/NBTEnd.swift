@@ -20,20 +20,18 @@
 import Foundation
 import NIO
 
-public class LegacyHandshake: Packet {
+public class NBTEnd: NBTTag {
+    
+    public var name: String?
     
     public required init() {}
     
-    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        // ???
-    }
+    public func readTag(from buffer: inout ByteBuffer) {}
     
-    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        // ???
-    }
+    public func writeTag(to buffer: inout ByteBuffer) {}
     
     public func toString() -> String {
-        return "LegacyHandshake()"
+        return "NBTEnd()"
     }
     
 }

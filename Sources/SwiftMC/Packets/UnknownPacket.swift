@@ -20,25 +20,25 @@
 import Foundation
 import NIO
 
-class UnknownPacket: Packet {
+public class UnknownPacket: Packet {
     
-    var packetId: Int32
-    var bytes: [UInt8]
+    public var packetId: Int32
+    public var bytes: [UInt8]
     
-    required init() {
+    public required init() {
         packetId = 0
         bytes = []
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         self.bytes = buffer.readBytes(length: buffer.readableBytes) ?? bytes
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeBytes(bytes)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "UnknownPacket(packetId: \(packetId), size: \(bytes.count) bytes)"
     }
     

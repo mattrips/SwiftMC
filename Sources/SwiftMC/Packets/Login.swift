@@ -20,20 +20,20 @@
 import Foundation
 import NIO
 
-class Login: Packet {
+public class Login: Packet {
     
-    var entityId: Int32
-    var gameMode: UInt8
-    var dimension: Int32
-    var seed: Int64
-    var difficulty: UInt8
-    var maxPlayers: UInt8
-    var levelType: String
-    var viewDistance: Int32
-    var reducedDebugInfo: Bool
-    var normalRespawn: Bool
+    public var entityId: Int32
+    public var gameMode: UInt8
+    public var dimension: Int32
+    public var seed: Int64
+    public var difficulty: UInt8
+    public var maxPlayers: UInt8
+    public var levelType: String
+    public var viewDistance: Int32
+    public var reducedDebugInfo: Bool
+    public var normalRespawn: Bool
     
-    required init() {
+    public required init() {
         entityId = 0
         gameMode = 0
         dimension = 0
@@ -46,7 +46,7 @@ class Login: Packet {
         normalRespawn = true
     }
     
-    init(entityId: Int32, gameMode: UInt8, dimension: Int32, seed: Int64, difficulty: UInt8, maxPlayers: UInt8, levelType: String, viewDistance: Int32, reducedDebugInfo: Bool, normalRespawn: Bool) {
+    public init(entityId: Int32, gameMode: UInt8, dimension: Int32, seed: Int64, difficulty: UInt8, maxPlayers: UInt8, levelType: String, viewDistance: Int32, reducedDebugInfo: Bool, normalRespawn: Bool) {
         self.entityId = entityId
         self.gameMode = gameMode
         self.dimension = dimension
@@ -59,7 +59,7 @@ class Login: Packet {
         self.normalRespawn = normalRespawn
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         entityId = buffer.readInteger(as: Int32.self) ?? entityId
         gameMode = buffer.readBytes(length: 1)?.first ?? gameMode
         if protocolVersion > ProtocolConstants.minecraft_1_9 {
@@ -86,7 +86,7 @@ class Login: Packet {
         }
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeInteger(entityId)
         buffer.writeBytes([gameMode])
         if protocolVersion > ProtocolConstants.minecraft_1_9 {
@@ -113,7 +113,7 @@ class Login: Packet {
         }
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "Login(entityId: \(entityId), gameMode: \(gameMode), dimension: \(dimension), seed: \(seed), difficulty: \(difficulty), maxPlayers: \(maxPlayers), levelType: \(levelType), viewDistance: \(viewDistance), reducedDebugInfo: \(reducedDebugInfo), normalRespawn: \(normalRespawn))"
     }
     

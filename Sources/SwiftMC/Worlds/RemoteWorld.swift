@@ -80,6 +80,11 @@ class RemoteWorld: WorldProtocol {
     
     // Handle a packet from the client
     func handle(packet: Packet, for client: ChannelWrapper) {
+        // Don't forward packet if protocol is not the same
+        if client.prot.name != client.remoteChannel?.prot.name {
+            return
+        }
+        
         // Check packet type
         
         
@@ -190,7 +195,7 @@ class RemoteWorld: WorldProtocol {
         // Reconnect to default server, if not self
         if let main = client.server.worlds.first, main.getName() != getName() {
             client.goTo(world: main)
-            client.sendMessage(message: ChatColor.red + "Disconnected: \(ChatMessage.decode(from: kick.message)?.toString() ?? "No reason")")
+            client.sendMessage(message: ChatColor.red + "Disconnected: \(ChatMessage.decode(from: kick.message)?.toString() ?? kick.message)")
             return true
         }
         return false

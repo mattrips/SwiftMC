@@ -20,32 +20,32 @@
 import Foundation
 import NIO
 
-class LoginSuccess: Packet {
+public class LoginSuccess: Packet {
     
-    var uuid: String
-    var username: String
+    public var uuid: String
+    public var username: String
     
-    required init() {
+    public required init() {
         uuid = ""
         username = ""
     }
     
-    init(uuid: String, username: String) {
+    public init(uuid: String, username: String) {
         self.uuid = uuid
         self.username = username
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         uuid = buffer.readVarString() ?? uuid
         username = buffer.readVarString() ?? username
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: uuid)
         buffer.writeVarString(string: username)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "LoginSuccess(uuid: \(uuid), username: \(username))"
     }
     

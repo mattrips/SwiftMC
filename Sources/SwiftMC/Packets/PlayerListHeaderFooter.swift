@@ -20,32 +20,32 @@
 import Foundation
 import NIO
 
-class PlayerListHeaderFooter: Packet {
+public class PlayerListHeaderFooter: Packet {
     
-    var header: String
-    var footer: String
+    public var header: String
+    public var footer: String
     
-    required init() {
+    public required init() {
         header = ""
         footer = ""
     }
     
-    init(header: String, footer: String) {
+    public init(header: String, footer: String) {
         self.header = header
         self.footer = footer
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         header = buffer.readVarString() ?? header
         footer = buffer.readVarString() ?? footer
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: header)
         buffer.writeVarString(string: footer)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "PlayerListHeaderFooter(header: \(header), footer: \(footer))"
     }
     

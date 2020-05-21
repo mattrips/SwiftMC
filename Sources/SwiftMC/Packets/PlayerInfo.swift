@@ -20,22 +20,22 @@
 import Foundation
 import NIO
 
-class PlayerInfo: Packet {
+public class PlayerInfo: Packet {
     
-    var action: Action
-    var items: [Item]
+    public var action: Action
+    public var items: [Item]
     
-    required init() {
+    public required init() {
         action = .add_player
         items = []
     }
     
-    init(action: Action, items: [Item]) {
+    public init(action: Action, items: [Item]) {
         self.action = action
         self.items = items
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         self.action = getAction(for: buffer.readVarInt() ?? 0)
         let count = buffer.readVarInt() ?? 0
         for _ in 0 ..< count {
@@ -71,7 +71,7 @@ class PlayerInfo: Packet {
         }
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarInt(value: action.rawValue)
         buffer.writeVarInt(value: Int32(items.count))
         for item in items {
@@ -108,11 +108,11 @@ class PlayerInfo: Packet {
         }
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "PlayerInfo(action: \(action), items: \(items))"
     }
     
-    enum Action: Int32 {
+    public enum Action: Int32 {
         case add_player = 0
         case update_gamemode = 1
         case update_latency = 2
@@ -120,7 +120,7 @@ class PlayerInfo: Packet {
         case remove_player = 4
     }
     
-    func getAction(for value: Int32) -> Action {
+    public func getAction(for value: Int32) -> Action {
         for action in [.add_player, .update_gamemode, .update_latency, .update_displayname, .remove_player] as [Action] {
             if value == action.rawValue {
                 return action
@@ -129,32 +129,32 @@ class PlayerInfo: Packet {
         return .add_player
     }
     
-    struct Item: Player {
+    public struct Item: Player {
         // All
-        var uuid: String?
+        public var uuid: String?
         
         // Add player
-        var username: String?
-        var properties: [[String]]?
+        public var username: String?
+        public var properties: [[String]]?
         
         // Add player and update gamemode
-        var gamemode: Int32?
+        public var gamemode: Int32?
         
         // Add player and update latency
-        var ping: Int32?
+        public var ping: Int32?
         
         // Add player and update displayname
-        var displayname: String?
+        public var displayname: String?
         
         // Player methods (for conformance)
-        func getUUID() -> String { uuid ?? "NULL" }
-        func goTo(world: WorldProtocol) {}
-        func kick(reason: String) {}
-        func isOnlineMode() -> Bool { return false }
-        func hasSwiftMCPremium() -> Bool { return false }
-        func setTabListMessage(header: ChatMessage, footer: ChatMessage) {}
-        func getName() -> String { username ?? "Player" }
-        func sendMessage(message: ChatMessage) {}
+        public func getUUID() -> String { uuid ?? "NULL" }
+        public func goTo(world: WorldProtocol) {}
+        public func kick(reason: String) {}
+        public func isOnlineMode() -> Bool { return false }
+        public func hasSwiftMCPremium() -> Bool { return false }
+        public func setTabListMessage(header: ChatMessage, footer: ChatMessage) {}
+        public func getName() -> String { username ?? "Player" }
+        public func sendMessage(message: ChatMessage) {}
     }
     
 }

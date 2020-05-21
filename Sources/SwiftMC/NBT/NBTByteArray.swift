@@ -20,33 +20,35 @@
 import Foundation
 import NIO
 
-public class EncryptionResponse: Packet {
+public class NBTByteArray: NBTTag {
     
-    public var sharedSecret: [UInt8]
-    public var verifyToken: [UInt8]
+    public var name: String?
+    public var values: [Int8]
     
     public required init() {
-        sharedSecret = []
-        verifyToken = []
+        values = []
     }
     
-    public init(sharedSecret: [UInt8], verifyToken: [UInt8]) {
-        self.sharedSecret = sharedSecret
-        self.verifyToken = verifyToken
+    public init(values: [Int8]) {
+        self.values = values
     }
     
-    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        sharedSecret = buffer.readArray() ?? sharedSecret
-        verifyToken = buffer.readArray() ?? verifyToken
+    public func readTag(from buffer: inout ByteBuffer) {
+        let count = Int(buffer.readInteger(as: Int32.self) ?? 0)
+        for _ in 0 ..< count {
+            values.append(buffer.readInteger(as: Int8.self) ?? 0)
+        }
     }
     
-    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        buffer.writeArray(value: sharedSecret)
-        buffer.writeArray(value: verifyToken)
+    public func writeTag(to buffer: inout ByteBuffer) {
+        buffer.writeInteger(Int32(values.count), as: Int32.self)
+        for value in values {
+            buffer.writeInteger(value)
+        }
     }
     
     public func toString() -> String {
-        return "EncryptionResponse(sharedSecret: \(sharedSecret), verifyToken: \(verifyToken))"
+        return "NBTByteArray(name: \(name ?? "NONE"), values: \(values))"
     }
     
 }

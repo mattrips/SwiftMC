@@ -20,27 +20,27 @@
 import Foundation
 import NIO
 
-class StatusResponse: Packet {
+public class StatusResponse: Packet {
     
-    var response: String
+    public var response: String
     
-    required init() {
+    public required init() {
         response = ""
     }
     
-    init(response: String) {
+    public init(response: String) {
         self.response = response
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         response = buffer.readVarString() ?? response
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: response)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "StatusResponse(response: \(response))"
     }
     

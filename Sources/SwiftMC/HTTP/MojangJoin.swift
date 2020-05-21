@@ -21,19 +21,19 @@ import Foundation
 import NIO
 import AsyncHTTPClient
 
-class MojangJoin {
+public class MojangJoin {
     
     let accessToken: String
     let selectedProfile: String
     let serverId: String
     
-    init(accessToken: String, selectedProfile: String, serverId: String) {
+    public init(accessToken: String, selectedProfile: String, serverId: String) {
         self.accessToken = accessToken
         self.selectedProfile = selectedProfile
         self.serverId = serverId
     }
     
-    func fetch(in eventLoopGroup: EventLoopGroup, completionHandler: @escaping (Bool) -> ()) {
+    public func fetch(in eventLoopGroup: EventLoopGroup, completionHandler: @escaping (Bool) -> ()) {
         let client = HTTPClient(eventLoopGroupProvider: .shared(eventLoopGroup))
         
         var urlComponents = URLComponents()

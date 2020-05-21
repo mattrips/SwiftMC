@@ -20,34 +20,34 @@
 import Foundation
 import NIO
 
-class GameState: Packet {
+public class GameState: Packet {
     
-    static let immediate_respawn: UInt8 = 11
+    public static let immediate_respawn: UInt8 = 11
     
-    var reason: UInt8
-    var value: Float32
+    public var reason: UInt8
+    public var value: Float32
     
-    required init() {
+    public required init() {
         reason = 0
         value = 0
     }
     
-    init(reason: UInt8, value: Float32) {
+    public init(reason: UInt8, value: Float32) {
         self.reason = reason
         self.value = value
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         self.reason = buffer.readBytes(length: 1)?.first ?? reason
         self.value = buffer.readFloat() ?? value
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeBytes([reason])
         buffer.writeFloat(value: value)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "GameState(reason: \(reason), value: \(value))"
     }
     

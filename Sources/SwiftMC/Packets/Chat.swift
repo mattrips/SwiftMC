@@ -20,41 +20,41 @@
 import Foundation
 import NIO
 
-class Chat: Packet {
+public class Chat: Packet {
     
-    var message: String
-    var position: UInt8
+    public var message: String
+    public var position: UInt8
     
-    required init() {
+    public required init() {
         message = ""
         position = 0
     }
     
-    init(message: String) {
+    public init(message: String) {
         self.message = message
         self.position = 0
     }
     
-    init(message: ChatMessage) {
+    public init(message: ChatMessage) {
         self.message = message.toJSON() ?? "{}"
         self.position = 0
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         message = buffer.readVarString() ?? message
         if direction.direction == .to_client {
             position = buffer.readBytes(length: 1)?.first ?? position
         }
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: message)
         if direction.direction == .to_client {
             buffer.writeBytes([position])
         }
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "Chat(message: \(message), position: \(position))"
     }
     

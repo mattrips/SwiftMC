@@ -20,37 +20,37 @@
 import Foundation
 import NIO
 
-class EncryptionRequest: Packet {
+public class EncryptionRequest: Packet {
     
-    var serverId: String
-    var publicKey: [UInt8]
-    var verifyToken: [UInt8]
+    public var serverId: String
+    public var publicKey: [UInt8]
+    public var verifyToken: [UInt8]
     
-    required init() {
+    public required init() {
         serverId = ""
         publicKey = []
         verifyToken = []
     }
     
-    init(serverId: String, publicKey: [UInt8], verifyToken: [UInt8]) {
+    public init(serverId: String, publicKey: [UInt8], verifyToken: [UInt8]) {
         self.serverId = serverId
         self.publicKey = publicKey
         self.verifyToken = verifyToken
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         serverId = buffer.readVarString() ?? serverId
         publicKey = buffer.readArray() ?? publicKey
         verifyToken = buffer.readArray() ?? verifyToken
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: serverId)
         buffer.writeArray(value: publicKey)
         buffer.writeArray(value: verifyToken)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "EncryptionRequest(serverId: \(serverId), publicKey: \(publicKey), verifyToken: \(verifyToken))"
     }
     

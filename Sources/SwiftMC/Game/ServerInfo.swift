@@ -23,14 +23,14 @@ public struct ServerInfo: Codable {
     
     // MARK: - JSON Encoding/Decoding
     
-    static func decode(from json: String) -> ServerInfo? {
+    public static func decode(from json: String) -> ServerInfo? {
         if let data = json.data(using: .utf8), let object = try? JSONDecoder().decode(ServerInfo.self, from: data) {
             return object
         }
         return nil
     }
     
-    func toJSON() -> String? {
+    public func toJSON() -> String? {
         if let json = try? JSONEncoder().encode(self), let string = String(bytes: json, encoding: .utf8) {
             return string
         }

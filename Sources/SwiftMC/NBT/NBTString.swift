@@ -20,33 +20,29 @@
 import Foundation
 import NIO
 
-public class EncryptionResponse: Packet {
+public class NBTString: NBTTag {
     
-    public var sharedSecret: [UInt8]
-    public var verifyToken: [UInt8]
+    public var name: String?
+    public var value: String
     
     public required init() {
-        sharedSecret = []
-        verifyToken = []
+        value = ""
     }
     
-    public init(sharedSecret: [UInt8], verifyToken: [UInt8]) {
-        self.sharedSecret = sharedSecret
-        self.verifyToken = verifyToken
+    public init(value: String) {
+        self.value = value
     }
     
-    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        sharedSecret = buffer.readArray() ?? sharedSecret
-        verifyToken = buffer.readArray() ?? verifyToken
+    public func readTag(from buffer: inout ByteBuffer) {
+        self.value = buffer.readShortPrefixedString() ?? value
     }
     
-    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
-        buffer.writeArray(value: sharedSecret)
-        buffer.writeArray(value: verifyToken)
+    public func writeTag(to buffer: inout ByteBuffer) {
+        buffer.writeShortPrefixedString(string: value)
     }
     
     public func toString() -> String {
-        return "EncryptionResponse(sharedSecret: \(sharedSecret), verifyToken: \(verifyToken))"
+        return "NBTString(name: \(name ?? "NONE"), value: \(value))"
     }
     
 }

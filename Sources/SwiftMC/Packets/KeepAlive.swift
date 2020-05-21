@@ -20,21 +20,21 @@
 import Foundation
 import NIO
 
-class KeepAlive: Packet {
+public class KeepAlive: Packet {
     
-    var randomId: Int64
+    public var randomId: Int64
     
-    required init() {
+    public required init() {
         randomId = 0
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         randomId = protocolVersion >= ProtocolConstants.minecraft_1_12_2 ?
             buffer.readInteger(as: Int64.self) ?? randomId :
             Int64(buffer.readVarInt() ?? Int32(randomId))
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         if protocolVersion >= ProtocolConstants.minecraft_1_12_2 {
             buffer.writeInteger(randomId)
         } else {
@@ -42,7 +42,7 @@ class KeepAlive: Packet {
         }
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "KeepAlive(randomId: \(randomId))"
     }
     

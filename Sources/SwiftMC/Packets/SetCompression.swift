@@ -20,27 +20,27 @@
 import Foundation
 import NIO
 
-class SetCompression: Packet {
+public class SetCompression: Packet {
     
-    var threshold: Int32
+    public var threshold: Int32
     
-    required init() {
+    public required init() {
         threshold = 0
     }
     
-    init(threshold: Int32) {
+    public init(threshold: Int32) {
         self.threshold = threshold
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         self.threshold = buffer.readVarInt() ?? self.threshold
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarInt(value: threshold)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "SetCompression(threshold: \(threshold))"
     }
     

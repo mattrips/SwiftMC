@@ -22,17 +22,27 @@ import NIO
 
 extension ByteBuffer {
     
-    mutating func readVarString() -> String? {
+    public mutating func readVarString() -> String? {
         let len = readVarInt() ?? 0
         return readString(length: Int(len))
     }
     
-    mutating func writeVarString(string: String) {
-        writeVarInt(value: Int32(string.data(using: .utf8)?.count ?? 0))
+    public mutating func writeVarString(string: String) {
+        writeVarInt(value: Int32(string.utf8.count))
         writeString(string)
     }
     
-    mutating func readVarInt(maxBytes: Int = 5) -> Int32? {
+    public mutating func readShortPrefixedString() -> String? {
+        let len = readInteger(as: UInt16.self) ?? 0
+        return readString(length: Int(len))
+    }
+    
+    public mutating func writeShortPrefixedString(string: String) {
+        writeInteger(UInt16(string.utf8.count), as: UInt16.self)
+        writeString(string)
+    }
+    
+    public mutating func readVarInt(maxBytes: Int = 5) -> Int32? {
         var out: Int32 = 0
         var bytes = 0
         while true {
@@ -52,7 +62,7 @@ extension ByteBuffer {
         return out
     }
     
-    mutating func writeVarInt(value: Int32) {
+    public mutating func writeVarInt(value: Int32) {
         var part: Int32
         var value = value
         while true {
@@ -68,17 +78,17 @@ extension ByteBuffer {
         }
     }
     
-    mutating func readArray() -> [UInt8]? {
+    public mutating func readArray() -> [UInt8]? {
         let len = readVarInt() ?? 0
         return readBytes(length: Int(len))
     }
     
-    mutating func writeArray(value: [UInt8]) {
+    public mutating func writeArray(value: [UInt8]) {
         writeVarInt(value: Int32(value.count))
         writeBytes(value)
     }
     
-    mutating func readBool() -> Bool? {
+    public mutating func readBool() -> Bool? {
         return readBytes(length: MemoryLayout<Bool>.size)?.reversed().withUnsafeBufferPointer {
             $0.baseAddress!.withMemoryRebound(to: Bool.self, capacity: 1) {
                 $0.pointee
@@ -86,7 +96,7 @@ extension ByteBuffer {
         }
     }
     
-    mutating func writeBool(value: Bool) {
+    public mutating func writeBool(value: Bool) {
         var value = value
         writeBytes(withUnsafePointer(to: &value) {
             $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Bool>.size) {
@@ -95,7 +105,7 @@ extension ByteBuffer {
         }.reversed())
     }
     
-    mutating func readDouble() -> Double? {
+    public mutating func readDouble() -> Double? {
         return readBytes(length: MemoryLayout<Double>.size)?.reversed().withUnsafeBufferPointer {
             $0.baseAddress!.withMemoryRebound(to: Double.self, capacity: 1) {
                 $0.pointee
@@ -103,7 +113,7 @@ extension ByteBuffer {
         }
     }
     
-    mutating func writeDouble(value: Double) {
+    public mutating func writeDouble(value: Double) {
         var value = value
         writeBytes(withUnsafePointer(to: &value) {
             $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Double>.size) {
@@ -112,7 +122,7 @@ extension ByteBuffer {
         }.reversed())
     }
     
-    mutating func readFloat() -> Float32? {
+    public mutating func readFloat() -> Float32? {
         return readBytes(length: MemoryLayout<Float32>.size)?.reversed().withUnsafeBufferPointer {
             $0.baseAddress!.withMemoryRebound(to: Float32.self, capacity: 1) {
                 $0.pointee
@@ -120,7 +130,7 @@ extension ByteBuffer {
         }
     }
     
-    mutating func writeFloat(value: Float32) {
+    public mutating func writeFloat(value: Float32) {
         var value = value
         writeBytes(withUnsafePointer(to: &value) {
             $0.withMemoryRebound(to: UInt8.self, capacity: MemoryLayout<Float32>.size) {
@@ -129,15 +139,23 @@ extension ByteBuffer {
         }.reversed())
     }
     
-    mutating func readUUID() -> String? {
+    public mutating func readUUID() -> String? {
         if let bytes = readBytes(length: 16) {
             return Data(bytes).bin2hex().addSeparatorUUID()
         }
         return nil
     }
     
-    mutating func writeUUID(value: String) {
+    public mutating func writeUUID(value: String) {
         writeBytes(value.replacingOccurrences(of: "-", with: "").hex2bin())
+    }
+    
+    public mutating func readNBT() -> NBTTag {
+        return NBTRegistry.readTag(in: &self)
+    }
+    
+    public mutating func writeNBT(tag: NBTTag) {
+        return NBTRegistry.writeTag(tag: tag, to: &self)
     }
     
 }

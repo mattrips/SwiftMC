@@ -20,27 +20,27 @@
 import Foundation
 import NIO
 
-class LoginRequest: Packet {
+public class LoginRequest: Packet {
     
-    var data: String
+    public var data: String
     
-    required init() {
+    public required init() {
         data = ""
     }
     
-    init(data: String) {
+    public init(data: String) {
         self.data = data
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         data = buffer.readVarString() ?? data
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: data)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "LoginRequest(data: \(data))"
     }
     

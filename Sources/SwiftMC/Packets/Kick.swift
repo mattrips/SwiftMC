@@ -20,27 +20,27 @@
 import Foundation
 import NIO
 
-class Kick: Packet {
+public class Kick: Packet {
     
-    var message: String
+    public var message: String
     
-    required init() {
+    public required init() {
         message = ""
     }
     
-    init(message: String) {
+    public init(message: String) {
         self.message = message
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         message = buffer.readVarString() ?? message
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: message)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "Kick(message: \(message))"
     }
     

@@ -20,15 +20,15 @@
 import Foundation
 import NIO
 
-class Respawn: Packet {
+public class Respawn: Packet {
     
-    var dimension: Int32
-    var hashedSeed: Int64
-    var difficulty: UInt8
-    var gameMode: UInt8
-    var levelType: String
+    public var dimension: Int32
+    public var hashedSeed: Int64
+    public var difficulty: UInt8
+    public var gameMode: UInt8
+    public var levelType: String
     
-    required init() {
+    public required init() {
         dimension = 0
         hashedSeed = 0
         difficulty = 0
@@ -36,7 +36,7 @@ class Respawn: Packet {
         levelType = ""
     }
     
-    init(dimension: Int32, hashedSeed: Int64, difficulty: UInt8, gameMode: UInt8, levelType: String) {
+    public init(dimension: Int32, hashedSeed: Int64, difficulty: UInt8, gameMode: UInt8, levelType: String) {
         self.dimension = dimension
         self.hashedSeed = hashedSeed
         self.difficulty = difficulty
@@ -44,7 +44,7 @@ class Respawn: Packet {
         self.levelType = levelType
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         dimension = buffer.readInteger(as: Int32.self) ?? dimension
         if protocolVersion >= ProtocolConstants.minecraft_1_15 {
             hashedSeed = buffer.readInteger(as: Int64.self) ?? hashedSeed
@@ -56,7 +56,7 @@ class Respawn: Packet {
         levelType = buffer.readVarString() ?? levelType
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeInteger(dimension)
         if protocolVersion >= ProtocolConstants.minecraft_1_15 {
             buffer.writeInteger(hashedSeed)
@@ -68,7 +68,7 @@ class Respawn: Packet {
         buffer.writeVarString(string: levelType)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "Respawn(dimension: \(dimension), hashedSeed: \(hashedSeed), difficulty: \(difficulty), gameMode: \(gameMode), levelType: \(levelType))"
     }
     

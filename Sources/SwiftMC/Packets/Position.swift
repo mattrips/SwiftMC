@@ -20,17 +20,17 @@
 import Foundation
 import NIO
 
-class Position: Packet {
+public class Position: Packet {
     
-    var x: Double
-    var y: Double
-    var z: Double
-    var yaw: Float
-    var pitch: Float
-    var flags: UInt8
-    var teleportId: Int32
+    public var x: Double
+    public var y: Double
+    public var z: Double
+    public var yaw: Float
+    public var pitch: Float
+    public var flags: UInt8
+    public var teleportId: Int32
     
-    required init() {
+    public required init() {
         x = 0
         y = 0
         z = 0
@@ -40,7 +40,7 @@ class Position: Packet {
         teleportId = 0
     }
     
-    init(x: Double, y: Double, z: Double, yaw: Float = 0, pitch: Float = 0, flags: UInt8 = 0, teleportId: Int32) {
+    public init(x: Double, y: Double, z: Double, yaw: Float = 0, pitch: Float = 0, flags: UInt8 = 0, teleportId: Int32) {
         self.x = x
         self.y = y
         self.z = z
@@ -50,7 +50,7 @@ class Position: Packet {
         self.teleportId = teleportId
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         x = buffer.readDouble() ?? x
         y = buffer.readDouble() ?? y
         z = buffer.readDouble() ?? z
@@ -62,7 +62,7 @@ class Position: Packet {
         }
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeDouble(value: x)
         buffer.writeDouble(value: y)
         buffer.writeDouble(value: z)
@@ -74,7 +74,7 @@ class Position: Packet {
         }
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "Position(x: \(x), y: \(y), z: \(z), yaw: \(yaw), pitch: \(pitch), teleportId: \(teleportId))"
     }
     

@@ -20,32 +20,32 @@
 import Foundation
 import NIO
 
-class PluginMessage: Packet {
+public class PluginMessage: Packet {
     
-    var tag: String
-    var data: [UInt8]
+    public var tag: String
+    public var data: [UInt8]
     
-    required init() {
+    public required init() {
         tag = ""
         data = []
     }
     
-    init(tag: String, data: [UInt8]) {
+    public init(tag: String, data: [UInt8]) {
         self.tag = tag
         self.data = data
     }
     
-    func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         tag = buffer.readVarString() ?? tag
         data = buffer.readBytes(length: buffer.readableBytes) ?? data
     }
     
-    func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         buffer.writeVarString(string: tag)
         buffer.writeBytes(data)
     }
     
-    func toString() -> String {
+    public func toString() -> String {
         return "PluginMessage(tag: \(tag), data: \(data))"
     }
     
