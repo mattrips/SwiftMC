@@ -29,7 +29,8 @@ public class NBTDouble: NBTTag {
         value = 0
     }
     
-    public init(value: Double) {
+    public init(name: String?, value: Double) {
+        self.name = name
         self.value = value
     }
     
@@ -43,6 +44,10 @@ public class NBTDouble: NBTTag {
     
     public func toString() -> String {
         return "NBTDouble(name: \(name ?? "NONE"), value: \(value))"
+    }
+    
+    public func contentSize() -> Int {
+        return 8
     }
     
 }

@@ -21,6 +21,7 @@ import Foundation
 
 open class Configuration {
     
+    public var serverRoot: String
     public var protocolVersion: Int32
     public var port: Int
     public var mode: AuthentificationMode = .online
@@ -31,11 +32,17 @@ open class Configuration {
     public var logger: (ChatMessage) -> ()
     
     public init(protocolVersion: Int32, port: Int) {
+        self.serverRoot = FileManager.default.currentDirectoryPath
         self.protocolVersion = protocolVersion
         self.port = port
         self.logger = { log in
             print(log.toString(useAnsi: true))
         }
+    }
+    
+    public func with(serverRoot: String) -> Configuration {
+        self.serverRoot = serverRoot
+        return self
     }
     
     public func with(mode: AuthentificationMode) -> Configuration {

@@ -29,7 +29,8 @@ public class NBTIntArray: NBTTag {
         values = []
     }
     
-    public init(values: [Int32]) {
+    public init(name: String?, values: [Int32]) {
+        self.name = name
         self.values = values
     }
     
@@ -49,6 +50,10 @@ public class NBTIntArray: NBTTag {
     
     public func toString() -> String {
         return "NBTIntArray(name: \(name ?? "NONE"), values: \(values))"
+    }
+    
+    public func contentSize() -> Int {
+        return 4 + (values.count * 4)
     }
     
 }

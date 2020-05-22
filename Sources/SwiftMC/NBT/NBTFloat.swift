@@ -29,7 +29,8 @@ public class NBTFloat: NBTTag {
         value = 0
     }
     
-    public init(value: Float32) {
+    public init(name: String?, value: Float32) {
+        self.name = name
         self.value = value
     }
     
@@ -43,6 +44,10 @@ public class NBTFloat: NBTTag {
     
     public func toString() -> String {
         return "NBTFloat(name: \(name ?? "NONE"), value: \(value))"
+    }
+    
+    public func contentSize() -> Int {
+        return 4
     }
     
 }

@@ -29,7 +29,8 @@ public class NBTList: NBTTag {
         values = []
     }
     
-    public init(values: [NBTTag]) {
+    public init(name: String?, values: [NBTTag]) {
+        self.name = name
         self.values = values
     }
     
@@ -53,6 +54,10 @@ public class NBTList: NBTTag {
     
     public func toString() -> String {
         return "NBTList(name: \(name ?? "NONE"), values:\n\(values.map({ $0.toString() }).joined(separator: "\n").indent())\n)"
+    }
+    
+    public func contentSize() -> Int {
+        return values.map({ $0.contentSize() }).reduce(0, { $0 + $1 }) + 5
     }
     
 }

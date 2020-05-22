@@ -32,6 +32,8 @@ public protocol NBTTag {
     
     func toString() -> String
     
+    func contentSize() -> Int
+    
 }
 
 extension NBTTag {
@@ -39,6 +41,13 @@ extension NBTTag {
     public init(name: String? = nil) {
         self.init()
         self.name = name
+    }
+    
+    public func fullSize() -> Int {
+        if let name = name {
+            return 3 + name.count + contentSize()
+        }
+        return 1 + contentSize()
     }
     
 }

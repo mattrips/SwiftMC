@@ -206,8 +206,10 @@ public class ChatMessage: Codable {
     }
     
     public func toString(useAnsi: Bool = false) -> String {
-        // Add format
+        // Init string
         var string = ""
+        
+        // Add format
         string += useAnsi ? getColor().toAnsi() : getColor().description
         
         // Read extra

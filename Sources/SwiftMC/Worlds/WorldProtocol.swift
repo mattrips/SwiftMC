@@ -35,6 +35,12 @@ public protocol WorldProtocol {
     
     func getPlayers() -> [Player]
     
+    func load()
+    
+    func save()
+    
+    func getChunk(x: Int32, z: Int32) -> WorldChunk
+    
 }
 
 extension WorldProtocol {

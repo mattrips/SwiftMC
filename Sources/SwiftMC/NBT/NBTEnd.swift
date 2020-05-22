@@ -34,4 +34,8 @@ public class NBTEnd: NBTTag {
         return "NBTEnd()"
     }
     
+    public func contentSize() -> Int {
+        return 0
+    }
+    
 }

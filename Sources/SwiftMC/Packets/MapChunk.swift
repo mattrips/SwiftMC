@@ -42,6 +42,17 @@ public class MapChunk: Packet {
         blockEntities = []
     }
     
+    public init(x: Int32, z: Int32, groundUp: Bool, bitMap: Int32, heightmaps: NBTCompound, biomes: [Int32], chunkData: [UInt8], blockEntities: [NBTTag]) {
+        self.x = x
+        self.z = z
+        self.groundUp = groundUp
+        self.bitMap = bitMap
+        self.heightmaps = heightmaps
+        self.biomes = biomes
+        self.chunkData = chunkData
+        self.blockEntities = blockEntities
+    }
+    
     public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
         self.x = buffer.readInteger(as: Int32.self) ?? x
         self.z = buffer.readInteger(as: Int32.self) ?? z
@@ -85,7 +96,7 @@ public class MapChunk: Packet {
                 if biomes.count > i {
                     buffer.writeInteger(biomes[i], as: Int32.self)
                 } else {
-                    buffer.writeInteger(0, as: Int32.self)
+                    buffer.writeInteger(127, as: Int32.self)
                 }
             }
         }

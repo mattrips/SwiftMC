@@ -280,6 +280,19 @@ class RemoteWorld: WorldProtocol {
         return try? SocketAddress.makeAddressResolvingHost(host, port: port)
     }
     
+    func load() {
+        // Nothing to load for remote worlds
+    }
+    
+    func save() {
+        // Nothing to save too
+    }
+    
+    func getChunk(x: Int32, z: Int32) -> WorldChunk {
+        // Empty chunk
+        return WorldChunk(x: x, z: z)
+    }
+    
     // Get a new session id
     func generateSession() -> String {
         return UUID().uuidString.lowercased()

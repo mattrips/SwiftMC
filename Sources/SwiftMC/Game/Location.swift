@@ -20,34 +20,24 @@
 import Foundation
 import NIO
 
-public class NBTInt: NBTTag {
+public struct Location {
     
-    public var name: String?
-    public var value: Int32
+    // Variables
+    public var world: WorldProtocol
+    public var x: Double
+    public var y: Double
+    public var z: Double
+    public var yaw: Float
+    public var pitch: Float
     
-    public required init() {
-        value = 0
+    // Get chunk for this location
+    public func getChunk() -> WorldChunk {
+        return world.getChunk(x: Int32(Int64(x) >> 4), z: Int32(Int64(z) >> 4))
     }
     
-    public init(name: String?, value: Int32) {
-        self.name = name
-        self.value = value
-    }
-    
-    public func readTag(from buffer: inout ByteBuffer) {
-        self.value = buffer.readInteger(as: Int32.self) ?? value
-    }
-    
-    public func writeTag(to buffer: inout ByteBuffer) {
-        buffer.writeInteger(value)
-    }
-    
-    public func toString() -> String {
-        return "NBTInt(name: \(name ?? "NONE"), value: \(value))"
-    }
-    
-    public func contentSize() -> Int {
-        return 4
+    // Convert to position packet
+    public func toPositionServerPacket() -> Position {
+        return Position(x: x, y: y, z: z, yaw: yaw, pitch: pitch, flags: 0, teleportId: 0)
     }
     
 }

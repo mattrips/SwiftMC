@@ -18,12 +18,19 @@
 */
 
 import Foundation
+import NIO
 
 class LocalWorld: WorldProtocol {
     
     // Configuration
-    let server: SwiftMC
-    let name: String
+    public let server: SwiftMC
+    public let name: String
+    public let path: URL
+    public let config: WorldConfiguration
+    
+    // World map
+    private var regions: [WorldRegion]
+    private var chunks: [WorldChunk]
     
     // Connected clients
     var clients: [ChannelWrapper]
@@ -32,6 +39,10 @@ class LocalWorld: WorldProtocol {
     init(server: SwiftMC, name: String) {
         self.server = server
         self.name = name
+        self.path = server.serverRoot.appendingPathComponent(name, isDirectory: true)
+        self.config = WorldConfiguration()
+        self.regions = []
+        self.chunks = []
         self.clients = []
     }
     
@@ -62,8 +73,20 @@ class LocalWorld: WorldProtocol {
         // Save current dimension
         client.lastDimmension = login.dimension
         
+        // Get spawn location for player
+        let location = Location(world: self, x: Double(config.spawnX), y: Double(config.spawnY), z: Double(config.spawnZ), yaw: 0, pitch: 0)
+        
+        // Send chunks
+        for x in -3 ..< 4 {
+            for z in -3 ..< 4 {
+                let chunkX = Int32(Int(location.x) >> 4 + x)
+                let chunkZ = Int32(Int(location.z) >> 4 + z)
+                client.send(packet: getChunk(x: chunkX, z: chunkZ).toMapChunkPacket())
+            }
+        }
+        
         // Send position
-        client.send(packet: Position(x: 15, y: 100, z: 15, teleportId: 1))
+        client.send(packet: location.toPositionServerPacket())
         
         // Fire PlayerJoinEvent
         let event = PlayerJoinEvent(player: client, message: "\(ChatColor.green)[+] \(ChatColor.yellow)\(client.getName())")
@@ -135,6 +158,80 @@ class LocalWorld: WorldProtocol {
         return clients
     }
     
+    func load() {
+        // Start loading the world
+        server.log("Start loading local world: \(name)")
+        
+        do {
+            // Check if the world folder exists
+            if !FileManager.default.fileExists(atPath: path.path) {
+                // Create a folder
+                server.log("Creating a new folder... (\(path.path))")
+                try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true, attributes: nil)
+            }
+            
+            // Read the configuration from the disk
+            let level_dat = path.appendingPathComponent("level.dat")
+            try config.read(from: level_dat)
+            
+            // Load main chunks
+            let width = 7
+            let spawn = Location(world: self, x: Double(config.spawnX), y: Double(config.spawnY), z: Double(config.spawnZ), yaw: 0, pitch: 0)
+            let progressBar = ChatProgressBar(total: width * width, width: 50)
+            for x in 0 ..< width {
+                for z in 0 ..< width {
+                    let chunkX = Int32(Int(spawn.x) >> 4 + x - width/2)
+                    let chunkZ = Int32(Int(spawn.z) >> 4 + z - width/2)
+                    let _ = getChunk(x: chunkX, z: chunkZ)
+                    server.log(progressBar.increment())
+                }
+            }
+        } catch {
+            // An error occurred loading the world
+            server.logError("An error occurred loading local world: \(name)")
+        }
+    }
+    
+    func save() {
+        // Start saving the world
+        server.log("Saving local world: \(name)")
+        
+        do {
+            // Save the level.dat file
+            try config.save(to: path.appendingPathComponent("level.dat"))
+            
+            // Save loaded regions
+            // ...
+        } catch {
+            // An error occurred saving the world
+            server.logError("An error occurred saving local world: \(name)")
+        }
+    }
+    
+    func getRegion(x: Int32, z: Int32) -> WorldRegion {
+        // Return existing region if exists
+        if let region = regions.first(where: { $0.x == x && $0.z == z }) {
+            return region
+        }
+        
+        // Init a new region
+        let region = WorldRegion(world: self, x: x, z: z)
+        regions.append(region)
+        return region
+    }
+    
+    func getChunk(x: Int32, z: Int32) -> WorldChunk {
+        // Return existing chunk if exists
+        if let chunk = chunks.first(where: { $0.x == x && $0.z == z }) {
+            return chunk
+        }
+        
+        // Retrieve from a region
+        let chunk = getRegion(x: x >> 5, z: z >> 5).getChunk(x: x & (WorldRegion.region_size - 1), z: z & (WorldRegion.region_size - 1))
+        chunks.append(chunk)
+        return chunk
+    }
+    
     func broadcast(packet: Packet) {
         // Send to all players
         clients.forEach { client in
@@ -148,3 +245,5 @@ class LocalWorld: WorldProtocol {
     }
     
 }
+
+struct WorldError: Error {}

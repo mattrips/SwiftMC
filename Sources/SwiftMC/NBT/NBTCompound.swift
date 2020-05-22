@@ -29,7 +29,8 @@ public class NBTCompound: NBTTag {
         values = []
     }
     
-    public init(values: [NBTTag]) {
+    public init(name: String?, values: [NBTTag]) {
+        self.name = name
         self.values = values
     }
     
@@ -51,8 +52,27 @@ public class NBTCompound: NBTTag {
         return "NBTCompound(name: \(name ?? "NONE"), values:\n\(values.map({ $0.toString() }).joined(separator: "\n").indent())\n)"
     }
     
+    public func contentSize() -> Int {
+        return values.map({ $0.fullSize() }).reduce(0, { $0 + $1 }) + 1
+    }
+    
     public subscript(name: String) -> NBTTag? {
-        return values.filter({ $0.name == name }).first
+        get {
+            return values.filter({ $0.name == name }).first
+        }
+        set {
+            values.removeAll(where: { $0.name == name })
+            if var newValue = newValue {
+                newValue.name = name
+                values.append(newValue)
+            }
+        }
+    }
+    
+    public func put(_ newElement: NBTTag) {
+        if let name = newElement.name {
+            self[name] = newElement
+        }
     }
     
 }

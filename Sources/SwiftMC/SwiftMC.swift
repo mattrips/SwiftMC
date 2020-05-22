@@ -25,6 +25,7 @@ public class SwiftMC: CommandSender {
     
     // Publics vars
     public let configuration: Configuration
+    public let serverRoot: URL
     public let port: Int
     public let mode: AuthentificationMode
     public var players: [Player] {
@@ -51,6 +52,7 @@ public class SwiftMC: CommandSender {
 
     // Initializer
     public init(configuration: Configuration) {
+        self.serverRoot = URL(fileURLWithPath: configuration.serverRoot, isDirectory: true)
         self.port = configuration.port
         self.mode = configuration.mode
         self.configuration = configuration
@@ -64,9 +66,10 @@ public class SwiftMC: CommandSender {
     // Start server
     public func start() {
         // Start
-        log("Starting server...")
-        log("Selected mode: \(mode)")
         running = true
+        log("Starting server...")
+        log("Server root: \(serverRoot.path)")
+        log("Selected mode: \(mode)")
         
         // Register basic commands
         log("Registering server commands...")
@@ -77,6 +80,9 @@ public class SwiftMC: CommandSender {
         
         // Load worlds
         log("Loading worlds...")
+        worlds.forEach { world in
+            world.load()
+        }
         
         // Start a timer for KeepAlive
         eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(1), delay: TimeAmount.seconds(1)) { _ in
@@ -132,16 +138,24 @@ public class SwiftMC: CommandSender {
 
     // Stop server
     public func stop() {
+        // Kick players
         players.forEach { player in
             player.kick(reason: "Server closed")
         }
+        
+        // Save worlds
+        worlds.forEach { world in
+            world.save()
+        }
+        
+        // And close
         serverChannel?.close().whenComplete({ _ in
             self.log("Stopping server...")
         })
     }
     
     // Initialize server channels
-    func makeBootstrap() -> ServerBootstrap {
+    private func makeBootstrap() -> ServerBootstrap {
         let reuseAddrOpt = ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR)
         return ServerBootstrap(group: eventLoopGroup)
             // Specify backlog and enable SO_REUSEADDR for the server itself
@@ -172,31 +186,31 @@ public class SwiftMC: CommandSender {
     }
     
     // Log
-    func log(_ message: ChatMessage) {
+    public func log(_ message: ChatMessage) {
         // Allow custom log channels (like remote access)
         configuration.logger(ChatMessage(extra: [
             ChatMessage(text: "§r[\(getCurrentTime())] "), message
         ]))
     }
     
-    func log(_ string: String) {
+    public func log(_ string: String) {
         // Send with correct format
         log(ChatMessage(text: string))
     }
     
-    func logError(_ string: String) {
+    public func logError(_ string: String) {
         // Send with correct format
         log(ChatMessage(text: string).with(format: .red))
     }
     
-    func getCurrentTime() -> String {
+    public func getCurrentTime() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "hh:mm:ss"
         return formatter.string(from: Date())
     }
     
     // Get server infos for ping
-    func getServerInfo(preferedProtocol: Int32) -> ServerInfo {
+    public func getServerInfo(preferedProtocol: Int32) -> ServerInfo {
         // Get players
         let players = self.players
         
@@ -217,7 +231,7 @@ public class SwiftMC: CommandSender {
     }
     
     // Broadcast a packet to all players
-    func broadcast(packet: Packet) {
+    public func broadcast(packet: Packet) {
         // Send to all players
         players.forEach { player in
             if let channel = player as? ChannelWrapper {
@@ -232,14 +246,14 @@ public class SwiftMC: CommandSender {
     }
     
     // Call listeners
-    func fireListeners(for event: Event) {
+    public func fireListeners(for event: Event) {
         for listener in listeners {
             event.call(listener: listener)
         }
     }
     
     // Get a new session id
-    func generateSession() -> String {
+    public func generateSession() -> String {
         var session: String
         repeat {
             session = UUID().uuidString.lowercased()
@@ -282,7 +296,7 @@ public class SwiftMC: CommandSender {
     // Load a world
     public func loadWorld(world: WorldProtocol) {
         worlds.append(world)
-        log("Loaded world \(world.getType()):\(world.getName())")
+        log("Added world \(world.getType()):\(world.getName())")
     }
     
     // Create a local world

@@ -29,7 +29,8 @@ public class NBTByte: NBTTag {
         value = 0
     }
     
-    public init(value: Int8) {
+    public init(name: String?, value: Int8) {
+        self.name = name
         self.value = value
     }
     
@@ -43,6 +44,10 @@ public class NBTByte: NBTTag {
     
     public func toString() -> String {
         return "NBTByte(name: \(name ?? "NONE"), value: \(value))"
+    }
+    
+    public func contentSize() -> Int {
+        return 1
     }
     
 }

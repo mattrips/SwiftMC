@@ -29,7 +29,8 @@ public class NBTShort: NBTTag {
         value = 0
     }
     
-    public init(value: Int16) {
+    public init(name: String?, value: Int16) {
+        self.name = name
         self.value = value
     }
     
@@ -43,6 +44,10 @@ public class NBTShort: NBTTag {
     
     public func toString() -> String {
         return "NBTShort(name: \(name ?? "NONE"), value: \(value))"
+    }
+    
+    public func contentSize() -> Int {
+        return 2
     }
     
 }
