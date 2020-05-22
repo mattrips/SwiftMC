@@ -62,7 +62,7 @@ public class VariableValueArray {
             var value = Int64(bitPattern: UInt64(bitPattern: backing[i0]) >> UInt64(bitPattern: Int64(i1)))
             
             if i2 > 64 {
-                value |= backing[i0 + 1] << 64 - Int64(i1)
+                value |= backing[i0 + 1] << Int64(64 - i1)
             }
             
             return Int32(value & valueMask)
@@ -81,7 +81,7 @@ public class VariableValueArray {
             if i2 > 64 {
                 i0 += 1
                 let p3 = ~((1 << i2 - 64) - 1)
-                let p4 = value >> 64 - Int64(i1)
+                let p4 = value >> Int64(64 - i1)
                 backing[i0] = backing[i0] & Int64(p3) | p4
             }
         }
