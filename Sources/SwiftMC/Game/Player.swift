@@ -20,9 +20,7 @@
 import Foundation
 import NIO
 
-public protocol Player: CommandSender {
-    
-    func getUUID() -> String
+public protocol Player: CommandSender, Entity {
     
     func goTo(world: WorldProtocol)
     

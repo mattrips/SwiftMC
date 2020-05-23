@@ -35,20 +35,16 @@ public class SwiftMC: CommandSender {
             }
         }
     }
-    public var isRunning: Bool {
-        get {
-            return running
-        }
-    }
     
     // Internal vars
-    internal var running: Bool = false
     internal let eventLoopGroup: EventLoopGroup
     internal var serverChannel: Channel?
     internal var commands: [String: Command]
     internal var listeners: [EventListener]
     internal var clients: [ChannelWrapper]
     public internal(set) var worlds: [WorldProtocol]
+    public internal(set) var running: Bool = false
+    public internal(set) var ready: Bool = false
 
     // Initializer
     public init(configuration: Configuration) {
@@ -112,6 +108,7 @@ public class SwiftMC: CommandSender {
             
             // Check that everything is running
             if let addr = serverChannel?.localAddress {
+                ready = true
                 log("Server running on port \(addr.port ?? 25565)")
             } else {
                 logError("ERROR: server reported no local address?")
@@ -131,6 +128,7 @@ public class SwiftMC: CommandSender {
         do {
             try serverChannel?.closeFuture.wait()
             running = false
+            log("Server is now down")
         } catch {
             logError("ERROR: Failed to wait on server: \(error)")
         }
@@ -138,19 +136,23 @@ public class SwiftMC: CommandSender {
 
     // Stop server
     public func stop() {
+        // Prepare to stop
+        ready = false
+        
         // Kick players
         players.forEach { player in
             player.kick(reason: "Server closed")
         }
         
         // Save worlds
+        log("Saving worlds...")
         worlds.forEach { world in
             world.save()
         }
         
-        // And close
+        // Close connection
         serverChannel?.close().whenComplete({ _ in
-            self.log("Stopping server...")
+            self.log("Closing connection...")
         })
     }
     
@@ -167,7 +169,7 @@ public class SwiftMC: CommandSender {
                 // Create objects
                 let decoder = MinecraftDecoder(server: true)
                 let encoder = MinecraftEncoder(server: true)
-                let wrapper = ChannelWrapper(session: self.generateSession(), server: self, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: self.configuration.protocolVersion)
+                let wrapper = ChannelWrapper(id: self.generateId(), server: self, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: self.configuration.protocolVersion)
                 
                 // Add client to list
                 self.clients.append(wrapper)
@@ -220,7 +222,7 @@ public class SwiftMC: CommandSender {
         return ServerInfo(
             version: ServerInfo.ServerVersion(
                 name: "SwiftMC *",
-                protocolVersion: Int(ProtocolConstants.supported_versions_ids.contains(preferedProtocol) ? preferedProtocol : configuration.protocolVersion)
+                protocolVersion: ProtocolConstants.supported_versions_ids.contains(preferedProtocol) ? preferedProtocol : configuration.protocolVersion
             ),
             players: ServerInfo.ServerPlayers(
                 max: configuration.slots,
@@ -255,12 +257,24 @@ public class SwiftMC: CommandSender {
     }
     
     // Get a new session id
-    public func generateSession() -> String {
-        var session: String
+    public func generateId() -> Int32 {
+        var id: Int32
         repeat {
-            session = UUID().uuidString.lowercased()
-        } while !clients.filter({ $0.session == session }).isEmpty
-        return session
+            id = Int32.random(in: Int32.min ... Int32.max)
+        } while getPlayer(id: id) != nil
+        return id
+    }
+    
+    public func getPlayer(id: Int32) -> Player? {
+        return clients.first(where: { $0.id == id })
+    }
+    
+    public func getPlayer(uuid: String) -> Player? {
+        return clients.first(where: { $0.uuid == uuid })
+    }
+    
+    public func getPlayer(name: String) -> Player? {
+        return clients.first(where: { $0.name == name })
     }
     
     // Register a command

@@ -51,7 +51,7 @@ public struct ServerInfo: Codable {
             case name = "name", protocolVersion = "protocol"
         }
         var name: String?
-        var protocolVersion: Int?
+        var protocolVersion: Int32?
     }
     
     // MARK: - Player list

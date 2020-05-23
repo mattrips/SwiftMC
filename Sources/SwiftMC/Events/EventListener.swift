@@ -18,7 +18,6 @@
 */
 
 import Foundation
-import NIO
 
 open class EventListener {
     
@@ -29,5 +28,6 @@ open class EventListener {
     open func onPlayerJoin(event: PlayerJoinEvent) {}
     open func onPlayerQuit(event: PlayerQuitEvent) {}
     open func onPlayerChat(event: PlayerChatEvent) {}
+    open func onPlayerMove(event: PlayerMoveEvent) {}
     
 }

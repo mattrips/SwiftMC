@@ -47,6 +47,9 @@ class LocalWorld: WorldProtocol {
     }
     
     internal func connect(client: ChannelWrapper) {
+        // Set a new local entity id
+        client.id = generateId()
+        
         // Add to clients
         clients.append(client)
         
@@ -74,19 +77,11 @@ class LocalWorld: WorldProtocol {
         client.lastDimmension = login.dimension
         
         // Get spawn location for player
-        let location = Location(world: self, x: Double(config.spawnX), y: Double(config.spawnY), z: Double(config.spawnZ), yaw: 0, pitch: 0)
+        client.location = Location(world: self, x: Double(config.spawnX), y: Double(config.spawnY), z: Double(config.spawnZ), yaw: 0, pitch: 0)
         
-        // Send chunks
-        for x in -3 ..< 4 {
-            for z in -3 ..< 4 {
-                let chunkX = Int32(Int(location.x) >> 4 + x)
-                let chunkZ = Int32(Int(location.z) >> 4 + z)
-                client.send(packet: getChunk(x: chunkX, z: chunkZ).toMapChunkPacket(protocolVersion: client.protocolVersion))
-            }
-        }
-        
-        // Send position
-        client.send(packet: location.toPositionServerPacket())
+        // Send chunks and position
+        client.sendCurrentChunks()
+        client.send(packet: client.getLocation().toPositionServerPacket())
         
         // Fire PlayerJoinEvent
         let event = PlayerJoinEvent(player: client, message: "\(ChatColor.green)[+] \(ChatColor.yellow)\(client.getName())")
@@ -124,7 +119,7 @@ class LocalWorld: WorldProtocol {
         
         // Remove client from current clients
         clients.removeAll(where: { current in
-            current.session == client.session
+            current.id == client.id
         })
     }
     
@@ -132,6 +127,12 @@ class LocalWorld: WorldProtocol {
         // Check packet type
         if let chat = packet as? Chat {
             handle(chat: chat, for: client)
+        } else if let playerPosition = packet as? PlayerPosition {
+            handle(playerPosition: playerPosition, for: client)
+        } else if let playerPositionLook = packet as? PlayerPositionLook {
+            handle(playerPositionLook: playerPositionLook, for: client)
+        } else if let playerLook = packet as? PlayerLook {
+            handle(playerLook: playerLook, for: client)
         }
     }
     
@@ -140,6 +141,35 @@ class LocalWorld: WorldProtocol {
         let event = PlayerChatEvent(player: client, message: chat.message, format: "\(ChatColor.aqua)[%@] \(ChatColor.reset)%@")
         client.server.fireListeners(for: event)
         broadcast(packet: Chat(message: ChatMessage(text: String(format: event.format, client.getName(), event.message))))
+    }
+    
+    internal func handle(playerPosition: PlayerPosition, for client: ChannelWrapper) {
+        // Forward
+        handle(playerMoveTo: Location(world: self, x: playerPosition.x, y: playerPosition.y, z: playerPosition.z, yaw: client.getLocation().yaw, pitch: client.getLocation().pitch), for: client)
+    }
+    
+    internal func handle(playerPositionLook: PlayerPositionLook, for client: ChannelWrapper) {
+        // Forward
+        handle(playerMoveTo: Location(world: self, x: playerPositionLook.x, y: playerPositionLook.y, z: playerPositionLook.z, yaw: playerPositionLook.yaw, pitch: playerPositionLook.pitch), for: client)
+    }
+    
+    internal func handle(playerLook: PlayerLook, for client: ChannelWrapper) {
+        // Forward
+        handle(playerMoveTo: Location(world: self, x: client.getLocation().x, y: client.getLocation().y, z: client.getLocation().z, yaw: playerLook.yaw, pitch: playerLook.pitch), for: client)
+    }
+    
+    internal func handle(playerMoveTo location: Location, for client: ChannelWrapper) {
+        // Fire PlayerMoveEvent
+        let event = PlayerMoveEvent(player: client, location: location)
+        client.server.fireListeners(for: event)
+        if !event.cancel {
+            // Handle move
+            client.location = event.to
+            client.sendCurrentChunks()
+        } else {
+            // Cancel move
+            
+        }
     }
     
     public func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
@@ -156,6 +186,18 @@ class LocalWorld: WorldProtocol {
     
     public func getPlayers() -> [Player] {
         return clients
+    }
+    
+    public func generateId() -> Int32 {
+        var id: Int32
+        repeat {
+            id = Int32.random(in: Int32.min ... Int32.max)
+        } while server.getPlayer(id: id) != nil || getEntity(id: id) != nil
+        return id
+    }
+    
+    public func getEntity(id: Int32) -> Entity? {
+        return clients.first(where: { $0.id == id })
     }
     
     internal func load() {
@@ -189,7 +231,7 @@ class LocalWorld: WorldProtocol {
                     for z in 0 ..< width {
                         let chunkX = Int32(Int(spawn.x) >> 4 + x - width/2)
                         let chunkZ = Int32(Int(spawn.z) >> 4 + z - width/2)
-                        self.loadChunk(x: chunkX, z: chunkZ) {
+                        self.loadChunk(x: chunkX, z: chunkZ) { _ in
                             // Update the progress bar
                             self.server.log(progressBar.increment())
                             if progressBar.isDone() {
@@ -253,10 +295,10 @@ class LocalWorld: WorldProtocol {
         return WorldChunk(x: x, z: z)
     }
     
-    public func loadChunk(x: Int32, z: Int32, completionHandler: @escaping () -> ()) {
+    public func loadChunk(x: Int32, z: Int32, completionHandler: @escaping (WorldChunk?) -> ()) {
         // Return existing chunk if exists
-        if chunks.contains(where: { $0.x == x && $0.z == z }) {
-            completionHandler()
+        if let chunk = chunks.first(where: { $0.x == x && $0.z == z }) {
+            completionHandler(chunk)
             return
         }
         
@@ -264,10 +306,10 @@ class LocalWorld: WorldProtocol {
         let futureResult = getRegion(x: x >> 5, z: z >> 5).loadChunk(x: x & (WorldRegion.region_size - 1), z: z & (WorldRegion.region_size - 1))
         futureResult.whenSuccess({ chunk in
             self.chunks.append(chunk)
-            completionHandler()
+            completionHandler(chunk)
         })
         futureResult.whenFailure { error in
-            completionHandler()
+            completionHandler(nil)
         }
     }
     

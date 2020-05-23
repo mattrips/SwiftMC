@@ -19,20 +19,22 @@
 
 import Foundation
 
-public class PlayerChatEvent: Event {
+public class PlayerMoveEvent: Event {
     
     public let player: Player
-    public var message: String
-    public var format: String
+    public let from: Location
+    public let to: Location
+    public var cancel: Bool
     
-    init(player: Player, message: String, format: String) {
+    init(player: Player, location: Location) {
         self.player = player
-        self.message = message
-        self.format = format
+        self.from = player.getLocation()
+        self.to = location
+        self.cancel = false
     }
     
     public func call(listener: EventListener) {
-        listener.onPlayerChat(event: self)
+        listener.onPlayerMove(event: self)
     }
     
 }

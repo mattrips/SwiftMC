@@ -23,44 +23,50 @@ import NIO
 public class ChannelWrapper: Player {
     
     // Channel related
-    var session: String
-    var server: SwiftMC
-    var channel: Channel
-    var handler: ChannelHandler?
-    var threshold: Int32 = -1
-    var closed: Bool = false
-    var closing: Bool = false
-    var promise: EventLoopPromise<Void>?
+    internal var id: Int32
+    internal var server: SwiftMC
+    internal var channel: Channel
+    internal var handler: ChannelHandler?
+    internal var threshold: Int32 = -1
+    internal var closed: Bool = false
+    internal var closing: Bool = false
+    internal var promise: EventLoopPromise<Void>?
     
     // Other channels
-    var remoteChannel: ChannelWrapper?
-    var pingChannel: ChannelWrapper?
+    internal var remoteChannel: ChannelWrapper?
+    internal var pingChannel: ChannelWrapper?
     
     // Encoding/Decoding
-    var decoder: MinecraftDecoder
-    var encoder: MinecraftEncoder
-    var protocolVersion: Int32
-    var prot: Prot
+    internal var decoder: MinecraftDecoder
+    internal var encoder: MinecraftEncoder
+    internal var protocolVersion: Int32
+    internal var prot: Prot
     
     // Encryption
-    var encryptionRequest: EncryptionRequest?
-    var sharedKey: [UInt8]?
+    internal var encryptionRequest: EncryptionRequest?
+    internal var sharedKey: [UInt8]?
     
     // Player related
-    var receivedLogin: Bool = false
-    var onlineMode: Bool = false
-    var lastDimmension: Int32?
-    var properties: [[String: Any]]?
-    var name: String?
-    var uuid: String?
-    var accessToken: String?
-    var world: WorldProtocol?
+    internal var receivedLogin: Bool = false
+    internal var onlineMode: Bool = false
+    internal var lastDimmension: Int32?
+    internal var properties: [[String: Any]]?
+    internal var name: String?
+    internal var uuid: String?
+    internal var accessToken: String?
+    
+    // World related
+    internal var world: WorldProtocol?
+    internal var location: Location?
+    internal var prevCentralX: Int32?
+    internal var prevCentralZ: Int32?
+    internal var knownChunks = [(Int32, Int32)]()
     
     // Plugin message channels
-    var pluginMessageChannels = [String]()
+    internal var pluginMessageChannels = [String]()
     
-    init(session: String, server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder, prot: Prot, protocolVersion: Int32) {
-        self.session = session
+    internal init(id: Int32, server: SwiftMC, channel: Channel, decoder: MinecraftDecoder, encoder: MinecraftEncoder, prot: Prot, protocolVersion: Int32) {
+        self.id = id
         self.server = server
         self.channel = channel
         self.decoder = decoder
@@ -71,13 +77,13 @@ public class ChannelWrapper: Player {
         self.encoder.channel = self
     }
     
-    func setHandler(handler: PacketHandler) {
+    internal func setHandler(handler: PacketHandler) {
         self.handler?.handler?.disconnected(channel: self)
         self.handler?.handler = handler
         self.handler?.handler?.connected(channel: self)
     }
     
-    func send(packet: Packet, newProtocol: Prot? = nil, threshold: Int32? = nil, sharedKey: [UInt8]? = nil) {
+    internal func send(packet: Packet, newProtocol: Prot? = nil, threshold: Int32? = nil, sharedKey: [UInt8]? = nil) {
         if !closed {
             // Check packet type
             if packet as? Login != nil {
@@ -133,7 +139,7 @@ public class ChannelWrapper: Player {
         }
     }
     
-    func close(packet: Packet? = nil) {
+    internal func close(packet: Packet? = nil) {
         if !closed {
             // Mark as closed
             closing = true
@@ -142,7 +148,7 @@ public class ChannelWrapper: Player {
             
             // Remove from server clients
             server.clients.removeAll(where: { client in
-                session == client.session
+                id == client.id
             })
             
             // Fire PlayerDisconnectEvent
@@ -159,7 +165,7 @@ public class ChannelWrapper: Player {
         }
     }
     
-    func unloadCurrentWorld() {
+    internal func unloadCurrentWorld() {
         // Disconnect
         self.world?.disconnect(client: self)
         
@@ -168,6 +174,103 @@ public class ChannelWrapper: Player {
         
         // Reset the tab list message
         self.setTabListMessage(header: ChatMessage(text: ""), footer: ChatMessage(text: ""))
+        
+        // Clear chunk related data
+        self.location = nil
+        self.prevCentralX = nil
+        self.prevCentralZ = nil
+        self.knownChunks = []
+    }
+    
+    internal func sendCurrentChunks() {
+        // Check if world is a local world
+        if let world = world as? LocalWorld {
+            // Get base data
+            let centralX = getLocation().blockX >> 4
+            let centralZ = getLocation().blockZ >> 4
+            let radius: Int32 = 5 // Will grow with time, when performances will be improved
+            
+            // Chunks to load or unload
+            var newChunks = [(Int32, Int32)]()
+            var oldChunks = [(Int32, Int32)]()
+            
+            // Check if chunks were sent once
+            if let prevCentralX = prevCentralX, let prevCentralZ = prevCentralZ {
+                // Check if an update is required
+                if abs(centralX - prevCentralX) > radius || abs(centralX - prevCentralX) > radius {
+                    // Reset known chunks
+                    knownChunks = []
+                    
+                    // Iterate all chunks
+                    for x in centralX - radius ..< centralX + radius {
+                        for z in centralZ - radius ..< centralZ + radius {
+                            newChunks.append((x, z))
+                        }
+                    }
+                } else if centralX != prevCentralX || centralZ != prevCentralZ {
+                    // Copy known chunks
+                    oldChunks.append(contentsOf: knownChunks)
+                    
+                    // Iterate all chunks
+                    for x in centralX - radius ..< centralX + radius {
+                        for z in centralZ - radius ..< centralZ + radius {
+                            // Check if the chunk should be loaded or unloaded
+                            if knownChunks.contains(where: { $0.0 == x && $0.1 == z }) {
+                                oldChunks.removeAll(where: { $0.0 == x && $0.1 == z })
+                            } else {
+                                newChunks.append((x, z))
+                            }
+                        }
+                    }
+                } else {
+                    // Nothing to load
+                    return
+                }
+            } else {
+                // Iterate all chunks
+                for x in centralX - radius ..< centralX + radius {
+                    for z in centralZ - radius ..< centralZ + radius {
+                        newChunks.append((x, z))
+                    }
+                }
+            }
+            
+            // Update previous centers
+            self.prevCentralX = centralX
+            self.prevCentralZ = centralZ
+            
+            // Sort chunks by distance
+            newChunks.sort { c1, c2 -> Bool in
+                var dx = 16 * c1.0 + 8 - getLocation().blockX
+                var dz = 16 * c1.1 + 8 - getLocation().blockZ
+                let d1 = dx * dx + dz * dz
+                dx = 16 * c2.0 + 8 - getLocation().blockX
+                dz = 16 * c2.1 + 8 - getLocation().blockZ
+                let d2 = dx * dx + dz * dz
+                return d1 > d2
+            }
+            
+            // Load new chunks
+            
+            // Check if skylight should be sent (disabled for nether or end)
+            let skylight = true // TODO: Change when implementing dimensions
+            
+            // Send new chunks
+            newChunks.forEach { loc in
+                knownChunks.append(loc)
+                world.loadChunk(x: loc.0, z: loc.1) { chunk in
+                    if let chunk = chunk {
+                        self.send(packet: chunk.toMapChunkPacket(protocolVersion: self.protocolVersion, skylight: skylight))
+                    }
+                }
+            }
+            
+            // Unload old chunks
+            oldChunks.forEach { loc in
+                // TODO: Send chunk unload packet
+                knownChunks.removeAll(where: { $0.0 == loc.0 && $0.1 == loc.1 })
+            }
+        }
     }
     
     // Adapters for outside
@@ -178,6 +281,17 @@ public class ChannelWrapper: Player {
     
     public func getUUID() -> String {
         return uuid ?? "NULL"
+    }
+    
+    public func getID() -> Int32 {
+        return id
+    }
+    
+    public func getLocation() -> Location {
+        if let location = location {
+            return location
+        }
+        fatalError("This player has no location")
     }
     
     public func sendMessage(message: ChatMessage) {

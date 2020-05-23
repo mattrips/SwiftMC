@@ -30,6 +30,11 @@ public struct Location {
     public var yaw: Float
     public var pitch: Float
     
+    // Computed properties
+    public var blockX: Int32 { return Int32(x) }
+    public var blockY: Int32 { return Int32(y) }
+    public var blockZ: Int32 { return Int32(z) }
+    
     // Get chunk for this location
     public func getChunk() -> WorldChunk {
         return world.getChunk(x: Int32(Int64(x) >> 4), z: Int32(Int64(z) >> 4))

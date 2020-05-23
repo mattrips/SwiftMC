@@ -148,6 +148,8 @@ public class PlayerInfo: Packet {
         
         // Player methods (for conformance)
         public func getUUID() -> String { uuid ?? "NULL" }
+        public func getID() -> Int32 { return 0 }
+        public func getLocation() -> Location { fatalError("Remote players have no location") }
         public func goTo(world: WorldProtocol) {}
         public func kick(reason: String) {}
         public func isOnlineMode() -> Bool { return false }

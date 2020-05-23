@@ -44,27 +44,36 @@ class RemoteWorld: WorldProtocol {
     func connect(client: ChannelWrapper) {
         // Get address
         if let address = getAddress() {
-            // Init the channel
-            makeBootstrap(for: client).connect(to: address).whenSuccess() { channel in
-                // Prepare handshake
-                var host = self.host
-                
-                // Add ip forward parameters
-                if self.ipForward {
-                    host += "\0\(client.channel.remoteAddress?.ipAddress ?? "")\0\(client.getUUID().replacingOccurrences(of: "-", with: ""))"
-                    if let properties = client.properties, let json = try? JSONSerialization.data(withJSONObject: properties, options: []), let string = String(bytes: json, encoding: .utf8) {
-                        host += "\0\(string)"
+            // Ping the server
+            pingWorld(from: client) { response in
+                // Check if the server responded to ping
+                if response != nil {
+                    // Init the channel
+                    self.makeBootstrap(for: client).connect(to: address).whenSuccess() { channel in
+                        // Prepare handshake
+                        var host = self.host
+                        
+                        // Add ip forward parameters
+                        if self.ipForward {
+                            host += "\0\(client.channel.remoteAddress?.ipAddress ?? "")\0\(client.getUUID().replacingOccurrences(of: "-", with: ""))"
+                            if let properties = client.properties, let json = try? JSONSerialization.data(withJSONObject: properties, options: []), let string = String(bytes: json, encoding: .utf8) {
+                                host += "\0\(string)"
+                            }
+                        }
+                        
+                        // Send handshake
+                        client.remoteChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: host, port: Int16(self.port), requestedProtocol: 2))
+                        
+                        // Change protocol
+                        client.remoteChannel?.prot = .LOGIN
+                        
+                        // Login request
+                        client.remoteChannel?.send(packet: LoginRequest(data: client.getName()))
                     }
+                } else {
+                    // The server did not respond, may be offline
+                    self.remoteHandle(packet: Kick(message: ChatMessage(text: "This server seems to be offline").toJSON() ?? "{}"), for: client)
                 }
-                
-                // Send handshake
-                client.remoteChannel?.send(packet: Handshake(protocolVersion: client.protocolVersion, host: host, port: Int16(self.port), requestedProtocol: 2))
-                
-                // Change protocol
-                client.remoteChannel?.prot = .LOGIN
-                
-                // Login request
-                client.remoteChannel?.send(packet: LoginRequest(data: client.getName()))
             }
         }
     }
@@ -98,25 +107,20 @@ class RemoteWorld: WorldProtocol {
         if let setCompression = packet as? SetCompression {
             remoteHandle(setCompression: setCompression, for: client)
             return
-        }
-        if let encryptionRequest = packet as? EncryptionRequest {
+        } else if let encryptionRequest = packet as? EncryptionRequest {
             remoteHandle(encryptionRequest: encryptionRequest, for: client)
             return
-        }
-        if let loginSuccess = packet as? LoginSuccess {
+        } else if let loginSuccess = packet as? LoginSuccess {
             remoteHandle(loginSuccess: loginSuccess, for: client)
             return
-        }
-        if let login = packet as? Login, client.receivedLogin {
+        } else if let login = packet as? Login, client.receivedLogin {
             remoteHandle(login: login, for: client)
             return
-        }
-        if let kick = packet as? Kick {
+        } else if let kick = packet as? Kick {
             if remoteHandle(kick: kick, for: client) {
                 return
             }
-        }
-        if let playerInfo = packet as? PlayerInfo {
+        } else if let playerInfo = packet as? PlayerInfo {
             remoteHandle(playerInfo: playerInfo, for: client)
         }
         
@@ -233,7 +237,7 @@ class RemoteWorld: WorldProtocol {
                     // Create objects
                     let decoder = MinecraftDecoder(server: false)
                     let encoder = MinecraftEncoder(server: false)
-                    let wrapper = ChannelWrapper(session: self.generateSession(), server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
+                    let wrapper = ChannelWrapper(id: self.generateId(), server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
                     
                     // Add client to list
                     client.pingChannel = wrapper
@@ -294,8 +298,8 @@ class RemoteWorld: WorldProtocol {
     }
     
     // Get a new session id
-    func generateSession() -> String {
-        return UUID().uuidString.lowercased()
+    func generateId() -> Int32 {
+        return Int32.random(in: Int32.min ... Int32.max)
     }
     
     // Initialize a client channel
@@ -307,7 +311,7 @@ class RemoteWorld: WorldProtocol {
                 // Create objects
                 let decoder = MinecraftDecoder(server: false)
                 let encoder = MinecraftEncoder(server: false)
-                let wrapper = ChannelWrapper(session: self.generateSession(), server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
+                let wrapper = ChannelWrapper(id: self.generateId(), server: client.server, channel: channel, decoder: decoder, encoder: encoder, prot: .HANDSHAKE, protocolVersion: client.protocolVersion)
                 
                 // Add client to list
                 client.remoteChannel = wrapper

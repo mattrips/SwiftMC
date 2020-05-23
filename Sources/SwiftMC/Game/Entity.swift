@@ -18,21 +18,14 @@
 */
 
 import Foundation
+import NIO
 
-public class PlayerChatEvent: Event {
+public protocol Entity {
     
-    public let player: Player
-    public var message: String
-    public var format: String
+    func getID() -> Int32
     
-    init(player: Player, message: String, format: String) {
-        self.player = player
-        self.message = message
-        self.format = format
-    }
+    func getUUID() -> String
     
-    public func call(listener: EventListener) {
-        listener.onPlayerChat(event: self)
-    }
+    func getLocation() -> Location
     
 }

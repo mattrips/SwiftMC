@@ -38,6 +38,12 @@ public final class ClientHandler: ChannelInboundHandler, ChannelHandler {
     }
     
     public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        // Close if server is not ready
+        if !channelWrapper.server.ready {
+            channelWrapper.close()
+            return
+        }
+        
         // Read wrapper
         let packet = unwrapInboundIn(data)
         

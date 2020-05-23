@@ -132,6 +132,31 @@ class Prot {
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x03)
         ])
         // ...
+        to_server.registerPacket(packetClass: PlayerPosition.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x04),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x0C),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12, packetID: 0x0E),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x0D),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x10),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x11)
+        ])
+        to_server.registerPacket(packetClass: PlayerLook.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x05),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x0E),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12, packetID: 0x10),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x0F),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x12),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x13)
+        ])
+        to_server.registerPacket(packetClass: PlayerPositionLook.self, mappings: [
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x06),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x0D),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12, packetID: 0x0F),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_12_1, packetID: 0x0E),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_13, packetID: 0x11),
+            ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_14, packetID: 0x12)
+        ])
+        // ...
         to_server.registerPacket(packetClass: PluginMessage.self, mappings: [
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_8, packetID: 0x17),
             ProtocolMapping(protocolVersion: ProtocolConstants.minecraft_1_9, packetID: 0x09),
