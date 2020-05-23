@@ -79,13 +79,19 @@ class WorldChunkSection {
         // Build the palette and the count
         self.count = 0
         self.palette = []
+        self.oldData = []
+        var palettedData = [Int32]()
         for type in types {
             if type != 0 {
                 count += 1
             }
-            if !(palette?.contains(type) ?? false) {
+            if let index = palette?.firstIndex(of: type) {
+                palettedData.append(Int32(index))
+            } else {
+                palettedData.append(Int32(palette?.count ?? 0))
                 palette?.append(type)
             }
+            oldData.append(contentsOf: [UInt8(type & 0xFF), UInt8(type >> 8)])
         }
         
         // Build the list
@@ -97,14 +103,8 @@ class WorldChunkSection {
             bitsPerBlock = WorldChunkSection.global_palette_bits_per_block
         }
         self.data = VariableValueArray(bitsPerValue: bitsPerBlock, capacity: WorldChunkSection.array_size)
-        self.oldData = []
         for i in 0 ..< WorldChunkSection.array_size {
-            if let palette = palette {
-                data[i] = Int32(palette.firstIndex(of: types[i]) ?? 0)
-            } else {
-                data[i] = types[i]
-            }
-            oldData.append(contentsOf: [UInt8(types[i] & 0xFF), UInt8(types[i] >> 8)])
+            data[i] = palette != nil ? palettedData[i] : types[i]
         }
     }
     

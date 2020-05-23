@@ -36,9 +36,7 @@ public class NBTByteArray: NBTTag {
     
     public func readTag(from buffer: inout ByteBuffer) {
         let count = Int(buffer.readInteger(as: Int32.self) ?? 0)
-        for _ in 0 ..< count {
-            values.append(buffer.readInteger(as: Int8.self) ?? 0)
-        }
+        values = buffer.readBytes(length: count)?.map({ Int8(bitPattern: $0) }) ?? []
     }
     
     public func writeTag(to buffer: inout ByteBuffer) {

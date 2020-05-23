@@ -175,6 +175,7 @@ class LocalWorld: WorldProtocol {
             try config.read(from: level_dat)
             
             // Load main chunks
+            let start = Date()
             let width = 7
             let spawn = Location(world: self, x: Double(config.spawnX), y: Double(config.spawnY), z: Double(config.spawnZ), yaw: 0, pitch: 0)
             let progressBar = ChatProgressBar(total: width * width, width: 50)
@@ -186,6 +187,8 @@ class LocalWorld: WorldProtocol {
                     server.log(progressBar.increment())
                 }
             }
+            let end = Date()
+            server.log("Loaded \(chunks.count) chunks in \(Int(end.timeIntervalSince(start))) seconds in local world: \(name)")
         } catch {
             // An error occurred loading the world
             server.logError("An error occurred loading local world: \(name)")
