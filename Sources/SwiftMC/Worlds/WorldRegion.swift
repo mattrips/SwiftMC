@@ -148,7 +148,7 @@ class WorldRegion {
     }
     
     // Get buffer to read chunk
-    private func getChunkNBT(x: Int32, z: Int32) throws -> NBTCompound? {
+    private func getChunkBuffer(x: Int32, z: Int32) throws -> ByteBuffer? {
         // Check chunk offset
         let offset = getOffset(x: x, z: z)
         if offset == 0 { return nil }
@@ -174,47 +174,57 @@ class WorldRegion {
             data = try data.decompress(with: .deflate)
         }
         
-        // Return the final NBT
-        return data.readNBT() as? NBTCompound
+        // Return the final buffer
+        return data
     }
     
     // Get a chunk (in region coordinates)
-    public func getChunk(x: Int32, z: Int32) -> WorldChunk {
-        // Create the chunk
-        let chunk = WorldChunk(x: WorldRegion.region_size * self.x + x, z: WorldRegion.region_size * self.z + z)
+    public func loadChunk(x: Int32, z: Int32) -> EventLoopFuture<WorldChunk> {
+        // Prepare the promise
+        let ev = world.server.eventLoopGroup.next()
+        let promise = ev.makePromise(of: WorldChunk.self)
         
-        // Try to get the chunk from file or cache
-        var level: NBTCompound?
-        do {
-            let root = try getChunkNBT(x: x, z: z)
-            level = root?["Level"] as? NBTCompound
-        } catch {
-            // An error occured reading the chunk
-            world.server.logError("An error occurred loading chunk (x: \(x), z: \(z)) in \(world.name)!")
-        }
+        // Get the buffer
+        var buffer = try? getChunkBuffer(x: x, z: z)
         
-        // If data exists from region file
-        if let level = level, (level["xPos"] as? NBTInt)?.value == chunk.x, (level["zPos"] as? NBTInt)?.value == chunk.z {
-            // Load the sections
-            if let sections = level["Sections"] as? NBTList {
-                for section in sections.values {
-                    if let section = section as? NBTCompound, let y = section["Y"] as? NBTByte {
-                        chunk.sections[y.value] = WorldChunkSection(tag: section)
+        // Do the work
+        ev.execute {
+            // Create the chunk
+            let chunk = WorldChunk(x: WorldRegion.region_size * self.x + x, z: WorldRegion.region_size * self.z + z)
+            
+            // Get the chunk from NBT
+            let level = (buffer?.readNBT() as? NBTCompound)?["Level"] as? NBTCompound
+            
+            // If data exists from NBT
+            if let level = level, (level["xPos"] as? NBTInt)?.value == chunk.x, (level["zPos"] as? NBTInt)?.value == chunk.z {
+                // Load the sections
+                if let sections = level["Sections"] as? NBTList {
+                    for section in sections.values {
+                        if let section = section as? NBTCompound, let y = section["Y"] as? NBTByte {
+                            chunk.sections[y.value] = WorldChunkSection(tag: section)
+                        }
                     }
                 }
+                
+                // Read biomes
+                if let biomes = level["Biomes"] as? NBTByteArray {
+                    chunk.biomes = biomes.values
+                }
+            } else {
+                // Generate a new chunk
+                
             }
             
-            // Read biomes
-            if let biomes = level["Biomes"] as? NBTByteArray {
-                chunk.biomes = biomes.values
-            }
-        } else {
-            // Generate a new chunk
-            
+            // Return the created chunk
+            return promise.succeed(chunk)
         }
         
-        // Return the created chunk
-        return chunk
+        // Return the future result
+        return promise.futureResult
+    }
+    
+    public func getChunk(x: Int32, z: Int32) -> WorldChunk? {
+        return try? loadChunk(x: x, z: z).wait()
     }
 
 }

@@ -33,10 +33,10 @@ class LocalWorld: WorldProtocol {
     private var chunks: [WorldChunk]
     
     // Connected clients
-    var clients: [ChannelWrapper]
+    private var clients: [ChannelWrapper]
     
     // Initialize a remote world
-    init(server: SwiftMC, name: String) {
+    internal init(server: SwiftMC, name: String) {
         self.server = server
         self.name = name
         self.path = server.serverRoot.appendingPathComponent(name, isDirectory: true)
@@ -46,7 +46,7 @@ class LocalWorld: WorldProtocol {
         self.clients = []
     }
     
-    func connect(client: ChannelWrapper) {
+    internal func connect(client: ChannelWrapper) {
         // Add to clients
         clients.append(client)
         
@@ -107,7 +107,7 @@ class LocalWorld: WorldProtocol {
         }
     }
     
-    func disconnect(client: ChannelWrapper) {
+    internal func disconnect(client: ChannelWrapper) {
         // Fire PlayerQuitEvent
         let event = PlayerQuitEvent(player: client, message: "\(ChatColor.red)[-] \(ChatColor.yellow)\(client.getName())")
         client.server.fireListeners(for: event)
@@ -128,37 +128,37 @@ class LocalWorld: WorldProtocol {
         })
     }
     
-    func handle(packet: Packet, for client: ChannelWrapper) {
+    internal func handle(packet: Packet, for client: ChannelWrapper) {
         // Check packet type
         if let chat = packet as? Chat {
             handle(chat: chat, for: client)
         }
     }
     
-    func handle(chat: Chat, for client: ChannelWrapper) {
+    internal func handle(chat: Chat, for client: ChannelWrapper) {
         // Fire PlayerChatEvent
         let event = PlayerChatEvent(player: client, message: chat.message, format: "\(ChatColor.aqua)[%@] \(ChatColor.reset)%@")
         client.server.fireListeners(for: event)
         broadcast(packet: Chat(message: ChatMessage(text: String(format: event.format, client.getName(), event.message))))
     }
     
-    func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
+    public func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
         completionHandler(nil)
     }
     
-    func getName() -> String {
+    public func getName() -> String {
         return name
     }
     
-    func getType() -> WorldType {
+    public func getType() -> WorldType {
         return .local
     }
     
-    func getPlayers() -> [Player] {
+    public func getPlayers() -> [Player] {
         return clients
     }
     
-    func load() {
+    internal func load() {
         // Start loading the world
         server.log("Start loading local world: \(name)")
         
@@ -176,18 +176,32 @@ class LocalWorld: WorldProtocol {
             
             // Load main chunks
             let start = Date()
-            let width = 7
-            let spawn = Location(world: self, x: Double(config.spawnX), y: Double(config.spawnY), z: Double(config.spawnZ), yaw: 0, pitch: 0)
-            let progressBar = ChatProgressBar(total: width * width, width: 50)
-            for x in 0 ..< width {
-                for z in 0 ..< width {
-                    let chunkX = Int32(Int(spawn.x) >> 4 + x - width/2)
-                    let chunkZ = Int32(Int(spawn.z) >> 4 + z - width/2)
-                    let _ = getChunk(x: chunkX, z: chunkZ)
-                    server.log(progressBar.increment())
+            let ev = server.eventLoopGroup.next()
+            let promise = ev.makePromise(of: Date.self)
+            ev.execute {
+                // Parameters of the loading process
+                let width = 10
+                let spawn = Location(world: self, x: Double(self.config.spawnX), y: Double(self.config.spawnY), z: Double(self.config.spawnZ), yaw: 0, pitch: 0)
+                let progressBar = ChatProgressBar(total: width * width, width: 50)
+                
+                // Iterate to load
+                for x in 0 ..< width {
+                    for z in 0 ..< width {
+                        let chunkX = Int32(Int(spawn.x) >> 4 + x - width/2)
+                        let chunkZ = Int32(Int(spawn.z) >> 4 + z - width/2)
+                        self.loadChunk(x: chunkX, z: chunkZ) {
+                            // Update the progress bar
+                            self.server.log(progressBar.increment())
+                            if progressBar.isDone() {
+                                promise.succeed(Date())
+                            }
+                        }
+                    }
                 }
             }
-            let end = Date()
+            
+            // End of chunk loading
+            let end = try promise.futureResult.wait()
             server.log("Loaded \(chunks.count) chunks in \(Int(end.timeIntervalSince(start))) seconds in local world: \(name)")
         } catch {
             // An error occurred loading the world
@@ -195,7 +209,7 @@ class LocalWorld: WorldProtocol {
         }
     }
     
-    func save() {
+    public func save() {
         // Start saving the world
         server.log("Saving local world: \(name)")
         
@@ -211,7 +225,7 @@ class LocalWorld: WorldProtocol {
         }
     }
     
-    func getRegion(x: Int32, z: Int32) -> WorldRegion {
+    internal func getRegion(x: Int32, z: Int32) -> WorldRegion {
         // Return existing region if exists
         if let region = regions.first(where: { $0.x == x && $0.z == z }) {
             return region
@@ -223,19 +237,41 @@ class LocalWorld: WorldProtocol {
         return region
     }
     
-    func getChunk(x: Int32, z: Int32) -> WorldChunk {
+    public func getChunk(x: Int32, z: Int32) -> WorldChunk {
         // Return existing chunk if exists
         if let chunk = chunks.first(where: { $0.x == x && $0.z == z }) {
             return chunk
         }
         
         // Retrieve from a region
-        let chunk = getRegion(x: x >> 5, z: z >> 5).getChunk(x: x & (WorldRegion.region_size - 1), z: z & (WorldRegion.region_size - 1))
-        chunks.append(chunk)
-        return chunk
+        if let chunk = getRegion(x: x >> 5, z: z >> 5).getChunk(x: x & (WorldRegion.region_size - 1), z: z & (WorldRegion.region_size - 1)) {
+            chunks.append(chunk)
+            return chunk
+        }
+        
+        // Chunk did not load
+        return WorldChunk(x: x, z: z)
     }
     
-    func broadcast(packet: Packet) {
+    public func loadChunk(x: Int32, z: Int32, completionHandler: @escaping () -> ()) {
+        // Return existing chunk if exists
+        if chunks.contains(where: { $0.x == x && $0.z == z }) {
+            completionHandler()
+            return
+        }
+        
+        // Retrieve from a region
+        let futureResult = getRegion(x: x >> 5, z: z >> 5).loadChunk(x: x & (WorldRegion.region_size - 1), z: z & (WorldRegion.region_size - 1))
+        futureResult.whenSuccess({ chunk in
+            self.chunks.append(chunk)
+            completionHandler()
+        })
+        futureResult.whenFailure { error in
+            completionHandler()
+        }
+    }
+    
+    public func broadcast(packet: Packet) {
         // Send to all players
         clients.forEach { client in
             client.send(packet: packet)

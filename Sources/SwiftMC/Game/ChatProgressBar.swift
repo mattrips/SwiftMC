@@ -46,6 +46,10 @@ public class ChatProgressBar: ChatMessage {
         return self
     }
     
+    public func isDone() -> Bool {
+        return count == total
+    }
+    
     public override func toString(useAnsi: Bool = false) -> String {
         // Init string
         var string = ""

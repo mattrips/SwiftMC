@@ -189,7 +189,9 @@ public class SwiftMC: CommandSender {
     public func log(_ message: ChatMessage) {
         // Allow custom log channels (like remote access)
         configuration.logger(ChatMessage(extra: [
-            ChatMessage(text: "§r[\(getCurrentTime())] "), message
+            ChatMessage(text: "[\(getCurrentTime())] "),
+            message,
+            ChatMessage(text: "")
         ]))
     }
     
