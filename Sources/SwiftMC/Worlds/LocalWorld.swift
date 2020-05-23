@@ -81,7 +81,7 @@ class LocalWorld: WorldProtocol {
             for z in -3 ..< 4 {
                 let chunkX = Int32(Int(location.x) >> 4 + x)
                 let chunkZ = Int32(Int(location.z) >> 4 + z)
-                client.send(packet: getChunk(x: chunkX, z: chunkZ).toMapChunkPacket())
+                client.send(packet: getChunk(x: chunkX, z: chunkZ).toMapChunkPacket(protocolVersion: client.protocolVersion))
             }
         }
         

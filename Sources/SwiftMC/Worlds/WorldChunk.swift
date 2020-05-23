@@ -35,16 +35,18 @@ public class WorldChunk {
     
     // Chunk sections
     internal var sections: [Int8: WorldChunkSection]
+    internal var biomes: [Int8]
     
     // Initializer
     internal init(x: Int32, z: Int32) {
         self.x = x
         self.z = z
         self.sections = [:]
+        self.biomes = []
     }
     
     // Convert to MapChunk packet
-    public func toMapChunkPacket(skylight: Bool = true, entireChunk: Bool = true) -> MapChunk {
+    public func toMapChunkPacket(protocolVersion: Int32, skylight: Bool = true, entireChunk: Bool = true) -> MapChunk {
         // Calculate bitMap
         let maxY = sections.map({ $0.key }).max() ?? 0
         let maxBitMap = (1 << maxY) - 1
@@ -57,11 +59,36 @@ public class WorldChunk {
         
         // Write sections
         var buffer = ByteBufferAllocator().buffer(capacity: 1024*1024*1024)
-        for y in 0 ..< maxY {
-            if (bitMap & 1 << y) != 0 {
-                sections[y]?.write(to: &buffer, skylight: skylight)
+        if protocolVersion >= ProtocolConstants.minecraft_1_9 {
+            for y in 0 ..< maxY {
+                if (bitMap & 1 << y) != 0 {
+                    sections[y]?.writeBlocks(to: &buffer)
+                    sections[y]?.writeBlockLight(to: &buffer)
+                    if skylight {
+                        sections[y]?.writeSkyLight(to: &buffer)
+                    }
+                }
             }
+        } else {
+            var secs = [WorldChunkSection]()
+            for y in 0 ..< maxY {
+                if (bitMap & 1 << y) != 0 {
+                    if let sec = sections[y] {
+                        sec.writeBlocksOld(to: &buffer)
+                        secs.append(sec)
+                    }
+                }
+            }
+            for sec in secs { sec.writeBlockLight(to: &buffer) }
+            if skylight { for sec in secs { sec.writeSkyLight(to: &buffer) } }
         }
+        
+        // Write biomes
+        if protocolVersion < ProtocolConstants.minecraft_1_15 && entireChunk {
+            buffer.writeBytes(biomes.map({ UInt8(bitPattern: $0) }))
+        }
+        
+        // Extract chunk data
         let data = buffer.readBytes(length: buffer.readableBytes) ?? []
         
         // Create the packet

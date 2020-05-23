@@ -203,6 +203,11 @@ class WorldRegion {
                     }
                 }
             }
+            
+            // Read biomes
+            if let biomes = level["Biomes"] as? NBTByteArray {
+                chunk.biomes = biomes.values
+            }
         } else {
             // Generate a new chunk
             

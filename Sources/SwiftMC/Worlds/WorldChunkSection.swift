@@ -33,6 +33,7 @@ class WorldChunkSection {
     // Palette
     private var palette: [Int32]?
     private var data: VariableValueArray!
+    private var oldData: [UInt8]!
     
     // Sky light and block light
     private var skyLight: NibbleArray
@@ -96,12 +97,14 @@ class WorldChunkSection {
             bitsPerBlock = WorldChunkSection.global_palette_bits_per_block
         }
         self.data = VariableValueArray(bitsPerValue: bitsPerBlock, capacity: WorldChunkSection.array_size)
+        self.oldData = []
         for i in 0 ..< WorldChunkSection.array_size {
             if let palette = palette {
                 data[i] = Int32(palette.firstIndex(of: types[i]) ?? 0)
             } else {
                 data[i] = types[i]
             }
+            oldData.append(contentsOf: [UInt8(types[i] & 0xFF), UInt8(types[i] >> 8)])
         }
     }
     
@@ -111,7 +114,8 @@ class WorldChunkSection {
     }
     
     // Write the chunk section to a byte buffer
-    internal func write(to buffer: inout ByteBuffer, skylight: Bool) {
+    
+    internal func writeBlocks(to buffer: inout ByteBuffer) {
         // Check that chunk is not empty
         if isEmpty() {
             return
@@ -119,7 +123,7 @@ class WorldChunkSection {
         
         // Bits per value (varies)
         buffer.writeBytes([UInt8(data.bitsPerValue)])
-        
+            
         // Palette
         if let palette = palette {
             buffer.writeVarInt(value: Int32(palette.count))
@@ -135,14 +139,36 @@ class WorldChunkSection {
         for value in data.backing {
             buffer.writeInteger(value, as: Int64.self)
         }
+    }
+    
+    internal func writeBlocksOld(to buffer: inout ByteBuffer) {
+        // Check that chunk is not empty
+        if isEmpty() {
+            return
+        }
+        
+        // Write section without palette
+        buffer.writeBytes(oldData)
+    }
+    
+    internal func writeBlockLight(to buffer: inout ByteBuffer) {
+        // Check that chunk is not empty
+        if isEmpty() {
+            return
+        }
         
         // Block light
         buffer.writeBytes(blockLight.rawData.map({ UInt8(bitPattern: $0) }))
+    }
+    
+    internal func writeSkyLight(to buffer: inout ByteBuffer) {
+        // Check that chunk is not empty
+        if isEmpty() {
+            return
+        }
         
         // Skylight
-        if skylight {
-            buffer.writeBytes(skyLight.rawData.map({ UInt8(bitPattern: $0) }))
-        }
+        buffer.writeBytes(skyLight.rawData.map({ UInt8(bitPattern: $0) }))
     }
 
 }
