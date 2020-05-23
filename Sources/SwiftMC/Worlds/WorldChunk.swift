@@ -48,7 +48,7 @@ public class WorldChunk {
     // Convert to MapChunk packet
     public func toMapChunkPacket(protocolVersion: Int32, skylight: Bool = true, entireChunk: Bool = true) -> MapChunk {
         // Calculate bitMap
-        let maxY = sections.map({ $0.key }).max() ?? 0
+        let maxY = (sections.map({ $0.key }).max() ?? 0) + 1
         let maxBitMap = (1 << maxY) - 1
         var bitMap = entireChunk ? maxBitMap : 0 & maxBitMap
         for y in 0 ..< maxY {
