@@ -247,7 +247,7 @@ public class ChannelWrapper: Player {
                 dx = 16 * c2.0 + 8 - getLocation().blockX
                 dz = 16 * c2.1 + 8 - getLocation().blockZ
                 let d2 = dx * dx + dz * dz
-                return d1 > d2
+                return d1 <= d2
             }
             
             // Load new chunks
