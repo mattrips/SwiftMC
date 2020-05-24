@@ -309,20 +309,18 @@ public class SwiftMC: CommandSender {
         listeners.append(listener)
     }
     
-    // Load a world
-    public func loadWorld(world: WorldProtocol) {
+    // Register a local world
+    public func registerLocalWorld(name: String) {
+        let world = LocalWorld(server: self, name: name)
         worlds.append(world)
-        log("Added world \(world.getType()):\(world.getName())")
+        log("Registered world \(world.getType()):\(world.getName())")
     }
     
-    // Create a local world
-    public func createLocalWorld(name: String) -> WorldProtocol {
-        return LocalWorld(server: self, name: name)
-    }
-    
-    // Create a remote world
-    public func createRemoteWorld(host: String, port: Int) -> WorldProtocol {
-        return RemoteWorld(server: self, host: host, port: port)
+    // Register a remote world
+    public func registerRemoteWorld(host: String, port: Int) {
+        let world = RemoteWorld(server: self, host: host, port: port)
+        worlds.append(world)
+        log("Registered world \(world.getType()):\(world.getName())")
     }
     
     // Dispatch a command

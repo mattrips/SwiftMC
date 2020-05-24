@@ -20,7 +20,7 @@
 import Foundation
 import NIO
 
-class LocalWorld: WorldProtocol {
+public class LocalWorld: WorldProtocol {
     
     // Configuration
     public let server: SwiftMC
@@ -46,7 +46,7 @@ class LocalWorld: WorldProtocol {
         self.clients = []
     }
     
-    internal func connect(client: ChannelWrapper) {
+    public func connect(client: ChannelWrapper) {
         // Set a new local entity id
         client.id = generateId()
         
@@ -102,7 +102,7 @@ class LocalWorld: WorldProtocol {
         }
     }
     
-    internal func disconnect(client: ChannelWrapper) {
+    public func disconnect(client: ChannelWrapper) {
         // Fire PlayerQuitEvent
         let event = PlayerQuitEvent(player: client, message: "\(ChatColor.red)[-] \(ChatColor.yellow)\(client.getName())")
         client.server.fireListeners(for: event)
@@ -123,7 +123,7 @@ class LocalWorld: WorldProtocol {
         })
     }
     
-    internal func handle(packet: Packet, for client: ChannelWrapper) {
+    public func handle(packet: Packet, for client: ChannelWrapper) {
         // Check packet type
         if let chat = packet as? Chat {
             handle(chat: chat, for: client)
@@ -200,7 +200,7 @@ class LocalWorld: WorldProtocol {
         return clients.first(where: { $0.id == id })
     }
     
-    internal func load() {
+    public func load() {
         // Start loading the world
         server.log("Start loading local world: \(name)")
         

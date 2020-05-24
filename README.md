@@ -39,7 +39,7 @@ import SwiftMC
 let server = SwiftMC(configuration: Configuration(protocolVersion: ProtocolConstants.minecraft_1_15_2, port: 25565))
 
 // Add worlds
-server.loadWorld(world: server.createLocalWorld(name: "world"))
+server.registerLocalWorld(name: "world")
 
 // And start it
 DispatchQueue.global().async {

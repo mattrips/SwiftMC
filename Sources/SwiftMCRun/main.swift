@@ -58,22 +58,22 @@ struct Server: ParsableCommand {
                 let parts = world.split(separator: ":").map({ String($0) })
                 if parts.count >= 2 {
                     if parts[0] == "local" && parts.count == 2 {
-                        server.loadWorld(world: server.createLocalWorld(name: parts[1]))
+                        server.registerLocalWorld(name: parts[1])
                     } else if parts[0] == "remote" && parts.count <= 3 {
                         if parts.count == 3, let port = Int(parts[2]) {
-                            server.loadWorld(world: server.createRemoteWorld(host: parts[1], port: port))
+                            server.registerRemoteWorld(host: parts[1], port: port)
                         } else {
-                            server.loadWorld(world: server.createRemoteWorld(host: parts[1], port: 25565))
+                            server.registerRemoteWorld(host: parts[1], port: 25565)
                         }
                     } else {
-                        server.loadWorld(world: server.createLocalWorld(name: "world"))
+                        server.registerLocalWorld(name: "world")
                     }
                 }
             }
             
             // Load default world if empty
             if server.worlds.isEmpty {
-                server.loadWorld(world: server.createLocalWorld(name: "world"))
+                server.registerLocalWorld(name: "world")
             }
             
             // And start it

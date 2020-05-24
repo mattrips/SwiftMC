@@ -35,10 +35,10 @@ The first thing to know is that there are two types of worlds: `local` and `remo
 
 ```swift
 // Load a local world
-server.loadWorld(world: server.createLocalWorld(name: "world"))
+server.registerLocalWorld(name: "world")
 
 // Load a remote world
-server.loadWorld(world: server.createRemoteWorld(host: "123.123.123.123", port: 25565))
+server.registerRemoteWorld(host: "123.123.123.123", port: 25565)
 ```
 
 Note: The local world will create a folder at your SwiftMC server root.

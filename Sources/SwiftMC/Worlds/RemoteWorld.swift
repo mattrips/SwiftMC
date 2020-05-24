@@ -21,19 +21,19 @@ import Foundation
 import NIO
 import CryptoSwift
 
-class RemoteWorld: WorldProtocol {
+public class RemoteWorld: WorldProtocol {
     
     // Configuration
-    let server: SwiftMC
-    let host: String
-    let port: Int
-    let ipForward: Bool
+    public let server: SwiftMC
+    public let host: String
+    public let port: Int
+    public let ipForward: Bool
     
     // Player infos
-    var playerItems = [PlayerInfo.Item]()
+    internal var playerItems = [PlayerInfo.Item]()
     
     // Initialize a remote world
-    init(server: SwiftMC, host: String, port: Int, ipForward: Bool = false) {
+    internal init(server: SwiftMC, host: String, port: Int, ipForward: Bool = false) {
         self.server = server
         self.host = host
         self.port = port
@@ -41,7 +41,7 @@ class RemoteWorld: WorldProtocol {
     }
     
     // Connect a client
-    func connect(client: ChannelWrapper) {
+    public func connect(client: ChannelWrapper) {
         // Get address
         if let address = getAddress() {
             // Ping the server
@@ -79,7 +79,7 @@ class RemoteWorld: WorldProtocol {
     }
     
     // Disconnect a client
-    func disconnect(client: ChannelWrapper) {
+    public func disconnect(client: ChannelWrapper) {
         // Disconnect from the remote world
         client.remoteChannel?.close()
         
@@ -88,7 +88,7 @@ class RemoteWorld: WorldProtocol {
     }
     
     // Handle a packet from the client
-    func handle(packet: Packet, for client: ChannelWrapper) {
+    public func handle(packet: Packet, for client: ChannelWrapper) {
         // Don't forward packet if protocol is not the same
         if client.prot.name != client.remoteChannel?.prot.name {
             return
@@ -102,7 +102,7 @@ class RemoteWorld: WorldProtocol {
     }
     
     // Handle a packet from the remote world
-    func remoteHandle(packet: Packet, for client: ChannelWrapper) {
+    internal func remoteHandle(packet: Packet, for client: ChannelWrapper) {
         // Check packet type
         if let setCompression = packet as? SetCompression {
             remoteHandle(setCompression: setCompression, for: client)
@@ -128,12 +128,12 @@ class RemoteWorld: WorldProtocol {
         client.send(packet: packet)
     }
     
-    func remoteHandle(setCompression: SetCompression, for client: ChannelWrapper) {
+    internal func remoteHandle(setCompression: SetCompression, for client: ChannelWrapper) {
         // Set threshold
         client.remoteChannel?.threshold = setCompression.threshold
     }
     
-    func remoteHandle(encryptionRequest: EncryptionRequest, for client: ChannelWrapper) {
+    internal func remoteHandle(encryptionRequest: EncryptionRequest, for client: ChannelWrapper) {
         // Check that our client is supporting premium
         guard client.onlineMode, let accessToken = client.accessToken, #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *) else {
             remoteHandle(packet: Kick(message: ChatMessage(text: "Online mode is required on this server. Be sure to be in online mode and have installed SwiftMCPremium to allow client communication.").toJSON() ?? "{}"), for: client)
@@ -167,14 +167,14 @@ class RemoteWorld: WorldProtocol {
         }
     }
     
-    func remoteHandle(loginSuccess: LoginSuccess, for client: ChannelWrapper) {
+    internal func remoteHandle(loginSuccess: LoginSuccess, for client: ChannelWrapper) {
         // Store success and change to game protocol
         client.remoteChannel?.name = loginSuccess.username
         client.remoteChannel?.uuid = loginSuccess.uuid
         client.remoteChannel?.prot = .GAME
     }
     
-    func remoteHandle(login: Login, for client: ChannelWrapper) {
+    internal func remoteHandle(login: Login, for client: ChannelWrapper) {
         // Send an immediate respawn if required
         if client.protocolVersion >= ProtocolConstants.minecraft_1_15 {
             client.send(packet: GameState(reason: GameState.immediate_respawn, value: login.normalRespawn ? 0 : 1))
@@ -188,7 +188,7 @@ class RemoteWorld: WorldProtocol {
         client.lastDimmension = login.dimension
     }
     
-    func remoteHandle(kick: Kick, for client: ChannelWrapper) -> Bool {
+    internal func remoteHandle(kick: Kick, for client: ChannelWrapper) -> Bool {
         // Check if kick reason is because if forward
         if kick.message.contains("IP forwarding") {
             // Reconnect using ip forwarding
@@ -205,7 +205,7 @@ class RemoteWorld: WorldProtocol {
         return false
     }
     
-    func remoteHandle(playerInfo: PlayerInfo, for client: ChannelWrapper) {
+    internal func remoteHandle(playerInfo: PlayerInfo, for client: ChannelWrapper) {
         // Iterate players
         for item in playerInfo.items {
             // Get the player
@@ -226,7 +226,7 @@ class RemoteWorld: WorldProtocol {
     }
     
     // Ping server
-    func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
+    public func pingWorld(from client: ChannelWrapper, completionHandler: @escaping (ServerInfo?) -> ()) {
         // Get address
         if let address = getAddress() {
             // Ping
@@ -268,42 +268,42 @@ class RemoteWorld: WorldProtocol {
         }
     }
     
-    func getName() -> String {
+    public func getName() -> String {
         return "\(host):\(port)"
     }
     
-    func getType() -> WorldType {
+    public func getType() -> WorldType {
         return .remote
     }
     
-    func getPlayers() -> [Player] {
+    public func getPlayers() -> [Player] {
         return playerItems
     }
     
-    func getAddress() -> SocketAddress? {
+    public func getAddress() -> SocketAddress? {
         return try? SocketAddress.makeAddressResolvingHost(host, port: port)
     }
     
-    func load() {
+    public func load() {
         // Nothing to load for remote worlds
     }
     
-    func save() {
+    public func save() {
         // Nothing to save too
     }
     
-    func getChunk(x: Int32, z: Int32) -> WorldChunk {
+    public func getChunk(x: Int32, z: Int32) -> WorldChunk {
         // Empty chunk
         return WorldChunk(x: x, z: z)
     }
     
     // Get a new session id
-    func generateId() -> Int32 {
+    internal func generateId() -> Int32 {
         return Int32.random(in: Int32.min ... Int32.max)
     }
     
     // Initialize a client channel
-    func makeBootstrap(for client: ChannelWrapper) -> ClientBootstrap {
+    internal func makeBootstrap(for client: ChannelWrapper) -> ClientBootstrap {
         let reuseAddrOpt = ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR)
         return ClientBootstrap(group: client.server.eventLoopGroup)
             .channelOption(reuseAddrOpt, value: 1)
@@ -326,7 +326,7 @@ class RemoteWorld: WorldProtocol {
     }
     
     // Remote world reader
-    class RemoteWorldHandler: ChannelInboundHandler, ChannelHandler {
+    internal class RemoteWorldHandler: ChannelInboundHandler, ChannelHandler {
         
         // Requirements
         public typealias InboundIn = Packet
@@ -343,7 +343,7 @@ class RemoteWorld: WorldProtocol {
         }
         
         // Read a packet from remote world
-        public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        func channelRead(context: ChannelHandlerContext, data: NIOAny) {
             // Read wrapper
             let packet = unwrapInboundIn(data)
             
@@ -360,7 +360,7 @@ class RemoteWorld: WorldProtocol {
         
     }
     
-    class RemoteWorldPingHandler: ChannelInboundHandler, ChannelHandler {
+    internal class RemoteWorldPingHandler: ChannelInboundHandler, ChannelHandler {
         
         // Requirements
         public typealias InboundIn = Packet
@@ -379,7 +379,7 @@ class RemoteWorld: WorldProtocol {
         }
         
         // Read a packet from remote world
-        public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        func channelRead(context: ChannelHandlerContext, data: NIOAny) {
             // Read wrapper
             let packet = unwrapInboundIn(data)
             
