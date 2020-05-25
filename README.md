@@ -19,7 +19,7 @@ Clone the repository and start the server
 ```bash
 git clone https://github.com/GroupeMINASTE/SwiftMC.git
 cd SwiftMC
-swift run
+swift run -c release
 ```
 
 ## Create a custom server

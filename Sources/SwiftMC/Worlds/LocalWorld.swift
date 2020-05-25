@@ -25,6 +25,7 @@ public class LocalWorld: WorldProtocol {
     // Configuration
     public let server: SwiftMC
     public let name: String
+    public let generator: WorldGenerator
     public let path: URL
     public let config: WorldConfiguration
     
@@ -36,9 +37,10 @@ public class LocalWorld: WorldProtocol {
     private var clients: [ChannelWrapper]
     
     // Initialize a remote world
-    internal init(server: SwiftMC, name: String) {
+    internal init(server: SwiftMC, name: String, generator: WorldGenerator) {
         self.server = server
         self.name = name
+        self.generator = generator
         self.path = server.serverRoot.appendingPathComponent(name, isDirectory: true)
         self.config = WorldConfiguration()
         self.regions = []
@@ -54,7 +56,7 @@ public class LocalWorld: WorldProtocol {
         clients.append(client)
         
         // Login player
-        let login = Login(entityId: 1, gameMode: 1, dimension: 0, seed: 0, difficulty: 0, maxPlayers: 1, levelType: "default", viewDistance: 16, reducedDebugInfo: false, normalRespawn: true)
+        let login = Login(entityId: client.id, gameMode: 1, dimension: 0, seed: config.randomSeed, difficulty: 0, maxPlayers: 16, levelType: "default", viewDistance: server.configuration.viewDistance, reducedDebugInfo: false, normalRespawn: true)
         
         // Check if a login was already handled
         if !client.receivedLogin {
@@ -222,9 +224,10 @@ public class LocalWorld: WorldProtocol {
             let promise = ev.makePromise(of: Date.self)
             ev.execute {
                 // Parameters of the loading process
-                let width = 10
+                let width = 2 * Int(self.server.configuration.viewDistance)
                 let spawn = Location(world: self, x: Double(self.config.spawnX), y: Double(self.config.spawnY), z: Double(self.config.spawnZ), yaw: 0, pitch: 0)
                 let progressBar = ChatProgressBar(total: width * width, width: 50)
+                self.server.log(progressBar)
                 
                 // Iterate to load
                 for x in 0 ..< width {
@@ -311,6 +314,10 @@ public class LocalWorld: WorldProtocol {
         futureResult.whenFailure { error in
             completionHandler(nil)
         }
+    }
+    
+    public func getGenerator() -> WorldGenerator {
+        return OverworldGenerator()
     }
     
     public func broadcast(packet: Packet) {

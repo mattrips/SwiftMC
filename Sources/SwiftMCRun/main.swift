@@ -38,6 +38,9 @@ struct Server: ParsableCommand {
     @Option(help: "Main world (in format type:name)")
     var world: String?
     
+    @Option(help: "View distance (in chunks)")
+    var viewDistance: Int?
+    
     @Option(help: "Enable debug")
     var debug: Bool?
     
@@ -50,6 +53,7 @@ struct Server: ParsableCommand {
                     .with(mode: mode == "auto" ? .auto : mode == "offline" ? .offline : .online)
                     .with(slots: slots ?? 42)
                     .with(motd: motd ?? "A SwiftMC Server")
+                    .with(viewDistance: Int32(viewDistance ?? 16))
                     .enable(debug: debug ?? false)
             )
             

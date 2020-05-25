@@ -21,6 +21,8 @@ import Foundation
 
 public protocol WorldGenerator {
     
+    func generateChunkData(world: LocalWorld, random: Random, chunkX: Int32, chunkZ: Int32, biome: [Int8]) -> WorldChunkData
     
+    func getName() -> String
     
 }

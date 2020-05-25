@@ -42,6 +42,7 @@ public class SwiftMC: CommandSender {
     internal var commands: [String: Command]
     internal var listeners: [EventListener]
     internal var clients: [ChannelWrapper]
+    internal var generators: [WorldGenerator]
     public internal(set) var worlds: [WorldProtocol]
     public internal(set) var running: Bool = false
     public internal(set) var ready: Bool = false
@@ -57,6 +58,9 @@ public class SwiftMC: CommandSender {
         self.listeners = []
         self.worlds = []
         self.clients = []
+        self.generators = [
+            OverworldGenerator(), SuperflatGenerator()
+        ]
     }
     
     // Start server
@@ -310,17 +314,28 @@ public class SwiftMC: CommandSender {
     }
     
     // Register a local world
-    public func registerLocalWorld(name: String) {
-        let world = LocalWorld(server: self, name: name)
+    public func registerLocalWorld(name: String, generator: String = "overworld") {
+        let world = LocalWorld(server: self, name: name, generator: getWorldGenerator(name: generator))
         worlds.append(world)
-        log("Registered world \(world.getType()):\(world.getName())")
+        log("Registered local world \(world.getName()) with generator \(world.generator.getName())")
     }
     
     // Register a remote world
     public func registerRemoteWorld(host: String, port: Int) {
         let world = RemoteWorld(server: self, host: host, port: port)
         worlds.append(world)
-        log("Registered world \(world.getType()):\(world.getName())")
+        log("Registered remote world \(world.getName())")
+    }
+    
+    // Register a world generaror
+    public func registerWorldGenerator(generator: WorldGenerator) {
+        generators.append(generator)
+        log("Registered generator \(generator.getName())")
+    }
+    
+    // Get a world generator by name (or default if not found)
+    public func getWorldGenerator(name: String) -> WorldGenerator {
+        return generators.first(where: { $0.getName() == name }) ?? OverworldGenerator()
     }
     
     // Dispatch a command

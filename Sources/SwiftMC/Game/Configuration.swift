@@ -28,6 +28,7 @@ open class Configuration {
     public var motd: String?
     public var favicon: String?
     public var slots: Int = 42
+    public var viewDistance: Int32 = 16
     public var debug: Bool = false
     public var logger: (ChatMessage) -> ()
     
@@ -62,6 +63,11 @@ open class Configuration {
     
     public func with(slots: Int) -> Configuration {
         self.slots = slots
+        return self
+    }
+    
+    public func with(viewDistance: Int32) -> Configuration {
+        self.viewDistance = viewDistance
         return self
     }
     

@@ -188,7 +188,7 @@ public class ChannelWrapper: Player {
             // Get base data
             let centralX = getLocation().blockX >> 4
             let centralZ = getLocation().blockZ >> 4
-            let radius: Int32 = 5 // Will grow with time, when performances will be improved
+            let radius: Int32 = min(server.configuration.viewDistance, 16) // TODO: Replace 16 by client configuration
             
             // Chunks to load or unload
             var newChunks = [(Int32, Int32)]()
