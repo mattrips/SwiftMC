@@ -55,7 +55,7 @@ public class ChatProgressBar: ChatMessage {
         var string = ""
         
         // Replace last line
-        if !first {
+        if !first && useAnsi {
             string += "\u{001B}[2K\u{001B}[A"
         }
         self.first = false
@@ -66,9 +66,6 @@ public class ChatProgressBar: ChatMessage {
         let p = " \((count * 100) / total)% "
         let s = (bar.count / 2) - p.count + 1
         string += bar.replacingCharacters(in: bar.index(bar.startIndex, offsetBy: s) ..< bar.index(bar.startIndex, offsetBy: s + p.count), with: p)
-        
-        // Add rest of the string
-        string += super.toString(useAnsi: useAnsi)
         
         // Return the result
         return string
