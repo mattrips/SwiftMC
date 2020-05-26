@@ -21,7 +21,11 @@ import Foundation
 
 public class SuperflatGenerator: WorldGenerator {
     
-    public func generateChunkData(world: LocalWorld, random: Random, chunkX: Int32, chunkZ: Int32, biome: [Int8]) -> WorldChunkData {
+    public func generateBiomes(world: LocalWorld, random: Random, chunkX: Int32, chunkZ: Int32) -> [Int8] {
+        return [Int8](repeating: 1, count: 256)
+    }
+    
+    public func generateChunkData(world: LocalWorld, random: Random, chunkX: Int32, chunkZ: Int32, biomes: [Int8]) -> WorldChunkData {
         let chunkData = WorldChunkData(world: world)
         
         for x: Int32 in 0 ..< 16 {

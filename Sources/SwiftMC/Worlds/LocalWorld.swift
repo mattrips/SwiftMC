@@ -33,6 +33,9 @@ public class LocalWorld: WorldProtocol {
     private var regions: [WorldRegion]
     private var chunks: [WorldChunk]
     
+    // Player data
+    private var playerdatas: [PlayerData]
+    
     // Connected clients
     private var clients: [ChannelWrapper]
     
@@ -45,6 +48,7 @@ public class LocalWorld: WorldProtocol {
         self.config = WorldConfiguration()
         self.regions = []
         self.chunks = []
+        self.playerdatas = []
         self.clients = []
     }
     
@@ -55,8 +59,12 @@ public class LocalWorld: WorldProtocol {
         // Add to clients
         clients.append(client)
         
+        // Read the player data
+        let playerdata = PlayerData(for: client.getUUID(), in: self)
+        playerdatas.append(playerdata)
+        
         // Login player
-        let login = Login(entityId: client.id, gameMode: 1, dimension: 0, seed: config.randomSeed, difficulty: 0, maxPlayers: 16, levelType: "default", viewDistance: server.configuration.viewDistance, reducedDebugInfo: false, normalRespawn: true)
+        let login = Login(entityId: client.id, gameMode: 1, dimension: playerdata.dimension, seed: config.randomSeed, difficulty: 0, maxPlayers: 16, levelType: "default", viewDistance: server.configuration.viewDistance, reducedDebugInfo: false, normalRespawn: true)
         
         // Check if a login was already handled
         if !client.receivedLogin {
@@ -79,7 +87,7 @@ public class LocalWorld: WorldProtocol {
         client.lastDimmension = login.dimension
         
         // Get spawn location for player
-        client.location = Location(world: self, x: Double(config.spawnX), y: Double(config.spawnY), z: Double(config.spawnZ), yaw: 0, pitch: 0)
+        client.location = playerdata.location
         
         // Send chunks and position
         client.sendCurrentChunks()
@@ -117,6 +125,16 @@ public class LocalWorld: WorldProtocol {
             
             // Send it
             player.getUUID() == client.getUUID() ? broadcast(packet: packet) : client.send(packet: packet)
+        }
+        
+        // Save player data and remove
+        if let playerdata = playerdatas.first(where: { $0.uuid == client.getUUID() }) {
+            // Fill the player data
+            playerdata.location = client.getLocation()
+            
+            // And save it
+            try? playerdata.save()
+            playerdatas.removeAll(where: { $0.uuid == client.getUUID() })
         }
         
         // Remove client from current clients
@@ -202,6 +220,10 @@ public class LocalWorld: WorldProtocol {
         return clients.first(where: { $0.id == id })
     }
     
+    public func getSpawnLocation() -> Location {
+        return Location(world: self, x: Double(config.spawnX), y: Double(config.spawnY), z: Double(config.spawnZ), yaw: 0, pitch: 0)
+    }
+    
     public func load() {
         // Start loading the world
         server.log("Start loading local world: \(name)")
@@ -226,8 +248,7 @@ public class LocalWorld: WorldProtocol {
                 // Parameters of the loading process
                 let width = 2 * Int(self.server.configuration.viewDistance)
                 let spawn = Location(world: self, x: Double(self.config.spawnX), y: Double(self.config.spawnY), z: Double(self.config.spawnZ), yaw: 0, pitch: 0)
-                let progressBar = ChatProgressBar(total: width * width, width: 50)
-                self.server.log(progressBar)
+                let progressBar = ChatProgressBar(total: width * width, width: 50, logger: self.server.log, done: { promise.succeed(Date()) })
                 
                 // Iterate to load
                 for x in 0 ..< width {
@@ -236,10 +257,7 @@ public class LocalWorld: WorldProtocol {
                         let chunkZ = Int32(Int(spawn.z) >> 4 + z - width/2)
                         self.loadChunk(x: chunkX, z: chunkZ) { _ in
                             // Update the progress bar
-                            self.server.log(progressBar.increment())
-                            if progressBar.isDone() {
-                                promise.succeed(Date())
-                            }
+                            progressBar.increment()
                         }
                     }
                 }
@@ -311,7 +329,7 @@ public class LocalWorld: WorldProtocol {
             self.chunks.append(chunk)
             completionHandler(chunk)
         })
-        futureResult.whenFailure { error in
+        futureResult.whenFailure { _ in
             completionHandler(nil)
         }
     }

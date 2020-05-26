@@ -213,12 +213,16 @@ class WorldRegion {
             } else {
                 // Generate a new chunk
                 let random = Random(seed: self.world.config.randomSeed)
+                let generator = self.world.getGenerator()
                 
                 // Biomes
-                chunk.biomes = [Int8](repeating: 127, count: 256)
+                chunk.biomes = generator.generateBiomes(world: self.world, random: random, chunkX: chunk.x, chunkZ: chunk.z)
                 
                 // Chunk data
-                let chunkData = self.world.getGenerator().generateChunkData(world: self.world, random: random, chunkX: chunk.x, chunkZ: chunk.z, biome: chunk.biomes)
+                let chunkData = generator.generateChunkData(world: self.world, random: random, chunkX: chunk.x, chunkZ: chunk.z, biomes: chunk.biomes)
+                
+                // Populate
+                // TODO
                 
                 // Load the sections
                 for y in 0 ..< WorldChunk.section_count {

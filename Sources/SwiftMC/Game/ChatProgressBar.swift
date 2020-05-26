@@ -25,29 +25,32 @@ public class ChatProgressBar: ChatMessage {
     private let width: Int
     private var count: Int
     private var first: Bool
+    private var logger: (ChatMessage) -> ()
+    private var done: () -> ()
     
-    public init(total: Int, width: Int) {
+    public init(total: Int, width: Int, logger: @escaping (ChatMessage) -> (), done: @escaping () -> ()) {
         self.total = total
         self.width = width
+        self.logger = logger
+        self.done = done
         self.count = 0
         self.first = true
         super.init(text: "")
+        self.logger(self)
     }
     
     required init(from decoder: Decoder) throws {
         fatalError("init(from:) has not been implemented")
     }
     
-    @discardableResult
-    public func increment() -> ChatProgressBar {
+    public func increment() {
         if count < total {
             count += 1
         }
-        return self
-    }
-    
-    public func isDone() -> Bool {
-        return count == total
+        self.logger(self)
+        if count == total {
+            done()
+        }
     }
     
     public override func toString(useAnsi: Bool = false) -> String {

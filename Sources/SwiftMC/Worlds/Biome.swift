@@ -19,12 +19,30 @@
 
 import Foundation
 
-public protocol WorldGenerator {
+public enum Biome: Int8 {
     
-    func generateBiomes(world: LocalWorld, random: Random, chunkX: Int32, chunkZ: Int32) -> [Int8]
-    
-    func generateChunkData(world: LocalWorld, random: Random, chunkX: Int32, chunkZ: Int32, biomes: [Int8]) -> WorldChunkData
-    
-    func getName() -> String
+    case ocean = 0
+    case plains = 1
+    case desert = 2
+    case extreme_hills = 3
+    case forest = 4
+    case taiga = 5
+    case swampland = 6
+    case river = 7
+    case hell = 8
+    case sky = 9
+    case frozen_ocean = 10
+    case frozen_river = 11
+    case ice_plains = 12
+    case ice_mountains = 13
+    case mushroom_island = 14
+    case mushroom_insland_shore = 15
+    case beach = 16
+    case desert_hills = 17
+    case forest_hills = 18
+    case taiga_hills = 19
+    case extreme_hills_edge = 20
+    case jungle = 21
+    case jungle_hills = 22
     
 }
