@@ -46,6 +46,7 @@ public class SwiftMC: CommandSender {
     public internal(set) var worlds: [WorldProtocol]
     public internal(set) var running: Bool = false
     public internal(set) var ready: Bool = false
+    public internal(set) var startTime: Int64 = 0
 
     // Initializer
     public init(configuration: Configuration) {
@@ -77,6 +78,8 @@ public class SwiftMC: CommandSender {
         registerCommand("help", command: HelpCommand())
         registerCommand("chat", command: ChatCommand())
         registerCommand("world", command: WorldCommand())
+        registerCommand("gamemode", command: GamemodeCommand())
+        registerCommand("gm", command: GamemodeCommand())
         
         // Load worlds
         log("Loading worlds...")
@@ -84,8 +87,11 @@ public class SwiftMC: CommandSender {
             world.load()
         }
         
-        // Start a timer for KeepAlive
+        // Start a timer for background tasks
         eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(1), delay: TimeAmount.seconds(1)) { _ in
+            // Increment time
+            self.startTime += 1
+            
             // Send keep alive to connected clients
             self.players.filter { player in
                 if let channel = player as? ChannelWrapper {
@@ -95,6 +101,15 @@ public class SwiftMC: CommandSender {
             }.forEach { player in
                 if let channel = player as? ChannelWrapper {
                     channel.send(packet: KeepAlive())
+                }
+            }
+            
+            // Save worlds
+            if self.startTime % 300 == 0 {
+                self.eventLoopGroup.next().execute {
+                    self.worlds.forEach { world in
+                        world.save()
+                    }
                 }
             }
         }
@@ -278,7 +293,7 @@ public class SwiftMC: CommandSender {
     }
     
     public func getPlayer(name: String) -> Player? {
-        return clients.first(where: { $0.name == name })
+        return clients.first(where: { $0.name?.lowercased() == name.lowercased() })
     }
     
     // Register a command

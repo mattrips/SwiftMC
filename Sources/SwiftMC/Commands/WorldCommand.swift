@@ -33,9 +33,7 @@ public class WorldCommand: Command {
                 }
                 if let type = type {
                     // Get world by name
-                    if let world = server.worlds.filter({ world in
-                        return world.getType() == type && world.getName().lowercased() == args[1].lowercased()
-                    }).first {
+                    if let world = server.worlds.first(where: { $0.getType() == type && $0.getName().lowercased() == args[1].lowercased() }) {
                         // Go to this world
                         player.goTo(world: world)
                     } else {

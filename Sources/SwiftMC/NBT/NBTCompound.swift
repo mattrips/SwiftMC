@@ -58,7 +58,7 @@ public class NBTCompound: NBTTag {
     
     public subscript(name: String) -> NBTTag? {
         get {
-            return values.filter({ $0.name == name }).first
+            return values.first(where: { $0.name == name })
         }
         set {
             values.removeAll(where: { $0.name == name })

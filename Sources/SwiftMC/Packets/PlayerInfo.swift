@@ -157,6 +157,8 @@ public class PlayerInfo: Packet {
         public func setTabListMessage(header: ChatMessage, footer: ChatMessage) {}
         public func getName() -> String { username ?? "Player" }
         public func sendMessage(message: ChatMessage) {}
+        public func getGameMode() -> GameMode { fatalError("Remote players have no gamemode") }
+        public func setGameMode(to gamemode: GameMode) {}
     }
     
 }

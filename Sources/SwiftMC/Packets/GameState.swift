@@ -22,6 +22,7 @@ import NIO
 
 public class GameState: Packet {
     
+    public static let change_gamemode: UInt8 = 3
     public static let immediate_respawn: UInt8 = 11
     
     public var reason: UInt8

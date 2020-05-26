@@ -68,6 +68,10 @@ public class PlayerData {
         get { return (root?["Dimension"] as? NBTInt)?.value ?? 0 }
         set { root?.put(NBTInt(name: "Dimension", value: newValue)) }
     }
+    var playerGameType: GameMode {
+        get { return (root?["playerGameType"] as? NBTInt)?.value ?? 0 }
+        set { root?.put(NBTInt(name: "playerGameType", value: newValue)) }
+    }
     
     // Read from file
     public init(for uuid: String, in world: LocalWorld) {
@@ -92,7 +96,15 @@ public class PlayerData {
             
             // Fill data
             self.location = world.getSpawnLocation()
+            self.playerGameType = world.config.gameType
         }
+    }
+    
+    // Update with a player object
+    internal func update(with client: ChannelWrapper) {
+        // Fill the player data
+        self.location = client.getLocation()
+        self.playerGameType = client.gamemode ?? 0
     }
     
     // Save to file

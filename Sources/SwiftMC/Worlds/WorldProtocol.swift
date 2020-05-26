@@ -46,15 +46,15 @@ public protocol WorldProtocol {
 extension WorldProtocol {
     
     public func getPlayer(uuid: String) -> Player? {
-        return getPlayers().filter({ player in
+        return getPlayers().first(where: { player in
             return player.getUUID() == uuid
-        }).first
+        })
     }
     
     public func getPlayer(name: String) -> Player? {
-        return getPlayers().filter({ player in
+        return getPlayers().first(where: { player in
             return player.getName() == name
-        }).first
+        })
     }
     
 }

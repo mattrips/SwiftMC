@@ -18,22 +18,14 @@
 */
 
 import Foundation
-import NIO
 
-public protocol Player: CommandSender, Entity {
+public typealias GameMode = Int32
+
+public extension Int32 {
     
-    func goTo(world: WorldProtocol)
-    
-    func kick(reason: String)
-    
-    func isOnlineMode() -> Bool
-    
-    func hasSwiftMCPremium() -> Bool
-    
-    func setTabListMessage(header: ChatMessage, footer: ChatMessage)
-    
-    func getGameMode() -> GameMode
-    
-    func setGameMode(to gamemode: GameMode)
+    static let survival: Int32 = 0
+    static let creative: Int32 = 1
+    static let adventure: Int32 = 2
+    static let spectator: Int32 = 3
     
 }

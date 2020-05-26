@@ -76,7 +76,7 @@ public class ChatMessage: Codable {
                 if ("ABCDEFGHIJKLMNOPQRSTUVWXYZ").contains(char) {
                     char = char.lowercased().first!
                 }
-                guard let format = ChatColor.all.filter({ $0.char == char }).first else {
+                guard let format = ChatColor.all.first(where: { $0.char == char }) else {
                     i += 1
                     continue
                 }

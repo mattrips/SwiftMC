@@ -37,9 +37,9 @@ public class WorldConfiguration {
         get { return (data?["DayTime"] as? NBTLong)?.value ?? 0 }
         set { data?.put(NBTLong(name: "DayTime", value: newValue)) }
     }
-    var gameType: Int8 {
-        get { return (data?["GameType"] as? NBTByte)?.value ?? 0 }
-        set { data?.put(NBTByte(name: "GameType", value: newValue)) }
+    var gameType: GameMode {
+        get { return (data?["GameType"] as? NBTInt)?.value ?? 0 }
+        set { data?.put(NBTInt(name: "GameType", value: newValue)) }
     }
     var initialized: Bool {
         get { return (data?["initialized"] as? NBTByte)?.value == 1 }

@@ -64,7 +64,7 @@ public class LocalWorld: WorldProtocol {
         playerdatas.append(playerdata)
         
         // Login player
-        let login = Login(entityId: client.id, gameMode: 1, dimension: playerdata.dimension, seed: config.randomSeed, difficulty: 0, maxPlayers: 16, levelType: "default", viewDistance: server.configuration.viewDistance, reducedDebugInfo: false, normalRespawn: true)
+        let login = Login(entityId: client.id, gameMode: UInt8(playerdata.playerGameType), dimension: playerdata.dimension, seed: config.randomSeed, difficulty: 0, maxPlayers: 16, levelType: "default", viewDistance: server.configuration.viewDistance, reducedDebugInfo: false, normalRespawn: true)
         
         // Check if a login was already handled
         if !client.receivedLogin {
@@ -83,10 +83,9 @@ public class LocalWorld: WorldProtocol {
             client.send(packet: Respawn(dimension: login.dimension, hashedSeed: login.seed, difficulty: login.difficulty, gameMode: login.gameMode, levelType: login.levelType))
         }
         
-        // Save current dimension
+        // Save dimension, gamemode, spawn location
         client.lastDimmension = login.dimension
-        
-        // Get spawn location for player
+        client.gamemode = playerdata.playerGameType
         client.location = playerdata.location
         
         // Send chunks and position
@@ -129,10 +128,8 @@ public class LocalWorld: WorldProtocol {
         
         // Save player data and remove
         if let playerdata = playerdatas.first(where: { $0.uuid == client.getUUID() }) {
-            // Fill the player data
-            playerdata.location = client.getLocation()
-            
-            // And save it
+            // Dave it
+            playerdata.update(with: client)
             try? playerdata.save()
             playerdatas.removeAll(where: { $0.uuid == client.getUUID() })
         }
@@ -279,6 +276,14 @@ public class LocalWorld: WorldProtocol {
         do {
             // Save the level.dat file
             try config.save(to: path.appendingPathComponent("level.dat"))
+            
+            // Save playerdatas
+            for playerdata in playerdatas {
+                if let client = clients.first(where: { $0.getUUID() == playerdata.uuid }) {
+                    playerdata.update(with: client)
+                    try playerdata.save()
+                }
+            }
             
             // Save loaded regions
             // ...

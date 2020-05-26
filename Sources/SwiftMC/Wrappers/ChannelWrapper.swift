@@ -58,6 +58,7 @@ public class ChannelWrapper: Player {
     // World related
     internal var world: WorldProtocol?
     internal var location: Location?
+    internal var gamemode: GameMode?
     internal var prevCentralX: Int32?
     internal var prevCentralZ: Int32?
     internal var knownChunks = [(Int32, Int32)]()
@@ -292,6 +293,22 @@ public class ChannelWrapper: Player {
             return location
         }
         fatalError("This player has no location")
+    }
+    
+    public func getGameMode() -> GameMode {
+        if let gamemode = gamemode {
+            return gamemode
+        }
+        fatalError("This player has no gamemode")
+    }
+    
+    public func setGameMode(to gamemode: GameMode) {
+        // Set the gamemode
+        self.gamemode = gamemode
+        
+        // Send update packets
+        self.send(packet: GameState(reason: GameState.change_gamemode, value: Float32(gamemode)))
+        (self.world as? LocalWorld)?.broadcast(packet: PlayerInfo(action: .update_gamemode, items: [PlayerInfo.Item(uuid: getUUID(), username: getName(), properties: [], gamemode: gamemode, ping: nil, displayname: nil)]))
     }
     
     public func sendMessage(message: ChatMessage) {
