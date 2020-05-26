@@ -58,7 +58,7 @@ public class WorldChunk {
         }
         
         // Write sections
-        var buffer = ByteBufferAllocator().buffer(capacity: 1024*1024*1024)
+        var buffer = ByteBufferAllocator().buffer(capacity: 1024*1024)
         if protocolVersion >= ProtocolConstants.minecraft_1_9 {
             for y in 0 ..< maxY {
                 if (bitMap & 1 << y) != 0 {

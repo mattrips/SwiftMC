@@ -48,7 +48,7 @@ public class ChatProgressBar: ChatMessage {
             count += 1
         }
         self.logger(self)
-        if count == total {
+        if count >= total {
             done()
         }
     }
