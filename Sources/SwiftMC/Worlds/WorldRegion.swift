@@ -247,6 +247,7 @@ class WorldRegion {
             }
             
             // Return the created chunk
+            chunk.loaded = true
             return promise.succeed(chunk)
         }
         

@@ -19,7 +19,7 @@
 
 import Foundation
 
-class Prot {
+class Prot: Equatable {
     
     // Register protocols
     static let HANDSHAKE = Prot(name: "HANDSHAKE") { to_server, _ in
@@ -216,5 +216,11 @@ class Prot {
         self.to_client = DirectionData(prot: self, direction: .to_client)
         completionHandler(to_server, to_client)
     }
+    
+    // Equatable
+    static func == (lhs: Prot, rhs: Prot) -> Bool {
+        return lhs.name == rhs.name
+    }
+    
     
 }

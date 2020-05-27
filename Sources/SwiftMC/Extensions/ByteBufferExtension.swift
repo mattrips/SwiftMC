@@ -155,7 +155,26 @@ extension ByteBuffer {
     }
     
     public mutating func writeNBT(tag: NBTTag) {
-        return NBTRegistry.writeTag(tag: tag, to: &self)
+        NBTRegistry.writeTag(tag: tag, to: &self)
+    }
+    
+    public mutating func readSlot() -> Slot {
+        let present = readBool() ?? false
+        let id = present ? readVarInt() : nil
+        let count = present ? readBytes(length: 1)?.first : nil
+        let tag = present ? readNBT() : nil
+        return Slot(present: present, id: id, count: count, tag: tag)
+    }
+    
+    public mutating func writeSlot(slot: Slot) {
+        if slot.present, let id = slot.id, let count = slot.count, let tag = slot.tag {
+            writeBool(value: true)
+            writeVarInt(value: id)
+            writeBytes([count])
+            writeNBT(tag: tag)
+        } else {
+            writeBool(value: false)
+        }
     }
     
 }

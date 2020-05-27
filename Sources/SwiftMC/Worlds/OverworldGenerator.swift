@@ -56,10 +56,10 @@ public class OverworldGenerator: WorldGenerator {
         for y: Int32 in 0 ..< max(h, 63) {
             if y < 4 {
                 // Always bedrock
-                chunkData.setBlock(x: x, y: y, z: z, blockId: 7)
+                chunkData.setBlock(x: x, y: y, z: z, material: .bedrock)
             } else if y < h - 10 || h > 70 {
                 // Stone until a change
-                chunkData.setBlock(x: x, y: y, z: z, blockId: 1)
+                chunkData.setBlock(x: x, y: y, z: z, material: .stone)
             } else if y < h - 1 {
                 // Check if we are under a lake
                 if h < 63 {
@@ -67,7 +67,7 @@ public class OverworldGenerator: WorldGenerator {
                     chunkData.setBlock(x: x, y: y, z: z, blockId: 24)
                 } else {
                     // Some dirt
-                    chunkData.setBlock(x: x, y: y, z: z, blockId: 3)
+                    chunkData.setBlock(x: x, y: y, z: z, material: .dirt)
                 }
             } else if y < h {
                 // Check if we are under a lake
@@ -76,7 +76,7 @@ public class OverworldGenerator: WorldGenerator {
                     chunkData.setBlock(x: x, y: y, z: z, blockId: 12)
                 } else {
                     // And grass
-                    chunkData.setBlock(x: x, y: y, z: z, blockId: 2)
+                    chunkData.setBlock(x: x, y: y, z: z, material: .grass)
                 }
             } else {
                 // Fill missing blocks with water

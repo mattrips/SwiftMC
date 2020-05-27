@@ -21,6 +21,7 @@ import Foundation
 
 public class ChatProgressBar: ChatMessage {
     
+    private let dispatchQueue: DispatchQueue
     private let total: Int
     private let width: Int
     private var count: Int
@@ -29,6 +30,7 @@ public class ChatProgressBar: ChatMessage {
     private var done: () -> ()
     
     public init(total: Int, width: Int, logger: @escaping (ChatMessage) -> (), done: @escaping () -> ()) {
+        self.dispatchQueue = DispatchQueue(label: "progressBar")
         self.total = total
         self.width = width
         self.logger = logger
@@ -44,12 +46,14 @@ public class ChatProgressBar: ChatMessage {
     }
     
     public func increment() {
-        if count < total {
-            count += 1
-        }
-        self.logger(self)
-        if count >= total {
-            done()
+        dispatchQueue.sync {
+            if count < total {
+                count += 1
+            }
+            self.logger(self)
+            if count >= total {
+                done()
+            }
         }
     }
     

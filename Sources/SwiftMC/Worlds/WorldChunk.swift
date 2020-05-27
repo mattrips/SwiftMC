@@ -36,6 +36,7 @@ public class WorldChunk {
     // Chunk sections
     internal var sections: [Int8: WorldChunkSection]
     internal var biomes: [Int8]
+    public internal(set) var loaded: Bool
     
     // Initializer
     internal init(x: Int32, z: Int32) {
@@ -43,6 +44,7 @@ public class WorldChunk {
         self.z = z
         self.sections = [:]
         self.biomes = []
+        self.loaded = false
     }
     
     // Convert to MapChunk packet

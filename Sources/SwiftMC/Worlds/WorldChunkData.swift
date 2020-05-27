@@ -43,13 +43,13 @@ public class WorldChunkData {
         return UInt8(sections[Int(y >> 4)][index(x: x, y: y, z: z)] & 0xF)
     }
 
-    /*public func getType(x: Int32, y: Int32, z: Int32) -> Material {
-        return Material.getMaterial(getTypeId(x: x, y: y, z: z))
+    public func getType(x: Int32, y: Int32, z: Int32) -> Material? {
+        return Material.get(id: UInt16(getTypeId(x: x, y: y, z: z)))
     }
 
-    public func getTypeAndData(x: Int32, y: Int32, z: Int32) -> MaterialData {
-        return getType(x: x, y: y, z: z).getNewData(getData(x: x, y: y, z: z))
-    }*/
+    public func getTypeAndData(x: Int32, y: Int32, z: Int32) -> MaterialData? {
+        return getType(x: x, y: y, z: z)?.getNewData(raw: getData(x: x, y: y, z: z))
+    }
 
     public func getTypeId(x: Int32, y: Int32, z: Int32) -> UInt8 {
         if x < 0 || y < 0 || z < 0 || x >= WorldChunk.height || y >= WorldChunk.depth || z >= WorldChunk.width {
@@ -61,13 +61,17 @@ public class WorldChunkData {
         return UInt8(sections[Int(y >> 4)][index(x: x, y: y, z: z)] >> 4)
     }
 
-    /*public func setBlock(x: Int32, y: Int32, z: Int32, material: Material) {
-        setBlock(x, y, z, material.getId())
+    public func setBlock(x: Int32, y: Int32, z: Int32, material: Material) {
+        if material.isBlock() {
+            setBlock(x: x, y: y, z: z, blockId: UInt8(material.id))
+        }
     }
 
     public func setBlock(x: Int32, y: Int32, z: Int32, materialData: MaterialData) {
-        setBlock(x, y, z, materialData.getItemTypeId(), materialData.getData())
-    }*/
+        if materialData.id < 256 {
+            setBlock(x: x, y: y, z: z, blockId: UInt8(materialData.id), data: materialData.data)
+        }
+    }
 
     public func setBlock(x: Int32, y: Int32, z: Int32, blockId: UInt8, data: UInt8 = 0) {
         if x < 0 || y < 0 || z < 0 || x >= WorldChunk.height || y >= WorldChunk.depth || z >= WorldChunk.width {

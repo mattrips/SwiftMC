@@ -83,6 +83,7 @@ struct Server: ParsableCommand {
             // And start it
             DispatchQueue.global().async {
                 server.start()
+                Self.exit()
             }
             
             // Read commands from console

@@ -262,7 +262,7 @@ public class LocalWorld: WorldProtocol {
             
             // End of chunk loading
             let end = try promise.futureResult.wait()
-            server.log("Loaded \(chunks.count) chunks in \(Int(end.timeIntervalSince(start))) seconds in local world: \(name)")
+            server.log("Loaded \(chunks.count) chunks in \(Int(end.timeIntervalSince(start))) seconds")
         } catch {
             // An error occurred loading the world
             server.logError("An error occurred loading local world: \(name)")
@@ -347,8 +347,11 @@ public class LocalWorld: WorldProtocol {
     }
     
     public func saveChunk(chunk: WorldChunk) {
-        // Save chunk in region file
-        getRegion(x: chunk.x >> 5, z: chunk.z >> 5).saveChunk(chunk: chunk, x: chunk.x & (WorldRegion.region_size - 1), z: chunk.z & (WorldRegion.region_size - 1))
+        // Check that chunk is loaded
+        if chunk.loaded {
+            // Save chunk in region file
+            getRegion(x: chunk.x >> 5, z: chunk.z >> 5).saveChunk(chunk: chunk, x: chunk.x & (WorldRegion.region_size - 1), z: chunk.z & (WorldRegion.region_size - 1))
+        }
     }
     
     public func getGenerator() -> WorldGenerator {

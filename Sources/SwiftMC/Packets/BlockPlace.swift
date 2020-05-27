@@ -20,36 +20,33 @@
 import Foundation
 import NIO
 
-public class NBTByteArray: NBTTag {
+public class BlockPlace: Packet {
     
-    public var name: String?
-    public var values: [Int8]
+    public var position: UInt64
+    public var direction: Int8
     
     public required init() {
-        values = []
+        position = 0
+        direction = 0
     }
     
-    public init(name: String?, values: [Int8]) {
-        self.name = name
-        self.values = values
+    public init(position: UInt64, direction: Int8) {
+        self.position = position
+        self.direction = 0
     }
     
-    public func readTag(from buffer: inout ByteBuffer) {
-        let count = Int(buffer.readInteger(as: Int32.self) ?? 0)
-        values = buffer.readBytes(length: count)?.map({ Int8(bitPattern: $0) }) ?? []
+    public func readPacket(from buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        self.position = buffer.readInteger(as: UInt64.self) ?? self.position
+        self.direction = buffer.readInteger(as: Int8.self) ?? self.direction
     }
     
-    public func writeTag(to buffer: inout ByteBuffer) {
-        buffer.writeInteger(Int32(values.count), as: Int32.self)
-        buffer.writeBytes(values.map({ UInt8(bitPattern: $0) }))
+    public func writePacket(to buffer: inout ByteBuffer, direction: DirectionData, protocolVersion: Int32) {
+        buffer.writeInteger(self.position, as: UInt64.self)
+        buffer.writeInteger(self.direction, as: Int8.self)
     }
     
     public func toString() -> String {
-        return "NBTByteArray(name: \(name ?? "NONE"), values: \(values))"
-    }
-    
-    public func contentSize() -> Int {
-        return 4 + values.count
+        return "BlockPlace(x: \(position >> 38), y: \(position & 0xFFF), z: \((position << 26) >> 38), direction: \(direction))"
     }
     
 }

@@ -32,13 +32,13 @@ public class SuperflatGenerator: WorldGenerator {
             for z: Int32 in 0 ..< 16 {
                 for y: Int32 in 0 ..< 64 {
                     if y < 4 {
-                        chunkData.setBlock(x: x, y: y, z: z, blockId: 7)
+                        chunkData.setBlock(x: x, y: y, z: z, material: .bedrock)
                     } else if y < 60 {
-                        chunkData.setBlock(x: x, y: y, z: z, blockId: 1)
+                        chunkData.setBlock(x: x, y: y, z: z, material: .stone)
                     } else if y < 63 {
-                        chunkData.setBlock(x: x, y: y, z: z, blockId: 3)
+                        chunkData.setBlock(x: x, y: y, z: z, material: .dirt)
                     } else if y < 64 {
-                        chunkData.setBlock(x: x, y: y, z: z, blockId: 2)
+                        chunkData.setBlock(x: x, y: y, z: z, material: .grass)
                     }
                 }
             }
