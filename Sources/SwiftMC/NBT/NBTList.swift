@@ -57,7 +57,7 @@ public class NBTList: NBTTag {
     }
     
     public func contentSize() -> Int {
-        return values.map({ $0.contentSize() }).reduce(0, { $0 + $1 }) + 5
+        return values.map({ $0.contentSize() }).reduce(5, { $0 + $1 })
     }
     
 }

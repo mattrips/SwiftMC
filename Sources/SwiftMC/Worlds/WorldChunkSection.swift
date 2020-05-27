@@ -33,7 +33,6 @@ class WorldChunkSection {
     // Palette
     private var palette: [Int32]?
     private var data: VariableValueArray!
-    private var oldData: [UInt8]!
     
     // Sky light and block light
     private var skyLight: NibbleArray
@@ -79,7 +78,6 @@ class WorldChunkSection {
         // Build the palette and the count
         self.count = 0
         self.palette = []
-        self.oldData = []
         var palettedData = [Int32]()
         for type in types {
             if type != 0 {
@@ -91,7 +89,6 @@ class WorldChunkSection {
                 palettedData.append(Int32(palette?.count ?? 0))
                 palette?.append(type)
             }
-            oldData.append(contentsOf: [UInt8(type & 0xFF), UInt8(type >> 8)])
         }
         
         // Build the list
@@ -148,7 +145,11 @@ class WorldChunkSection {
         }
         
         // Write section without palette
-        buffer.writeBytes(oldData)
+        buffer.writeBytes(getTypes().map({ [UInt8($0 & 0xFF), UInt8($0 >> 8)] }).reduce([], { result, next in
+            var newResult = result
+            newResult.append(contentsOf: next)
+            return newResult
+        }))
     }
     
     internal func writeBlockLight(to buffer: inout ByteBuffer) {
@@ -169,6 +170,43 @@ class WorldChunkSection {
         
         // Skylight
         buffer.writeBytes(skyLight.rawData.map({ UInt8(bitPattern: $0) }))
+    }
+    
+    // Save the section to a NBT tag
+    
+    internal func save(to tag: NBTCompound) {
+        let types = getTypes()
+        var rawTypes = [Int8]()
+        let data = NibbleArray(size: WorldChunkSection.array_size)
+        for i in 0 ..< types.count {
+            let type = types[i]
+            rawTypes.append(Int8(type >> 4 & 0xFF))
+            data[i] = Int8(type & 0xF)
+        }
+        tag.put(NBTByteArray(name: "Blocks", values: rawTypes))
+        tag.put(NBTByteArray(name: "Data", values: data.rawData))
+        tag.put(NBTByteArray(name: "BlockLight", values: blockLight.rawData))
+        tag.put(NBTByteArray(name: "SkyLight", values: skyLight.rawData))
+    }
+    
+    // Get and set types in the chunk section
+    
+    // Optimize the storage
+    public func optimize() {
+        loadTypeArray(getTypes())
+    }
+    
+    // Get types
+    public func getTypes() -> [Int32] {
+        var types = [Int32]()
+        for i in 0 ..< data.capacity {
+            var type = data[i]
+            if let palette = palette {
+                type = palette[Int(type)]
+            }
+            types.append(type)
+        }
+        return types
     }
 
 }

@@ -286,7 +286,14 @@ public class LocalWorld: WorldProtocol {
             }
             
             // Save loaded regions
-            // ...
+            let progressBar = ChatProgressBar(total: chunks.count, width: 50, logger: self.server.log, done: {})
+            for chunk in chunks {
+                saveChunk(chunk: chunk)
+                progressBar.increment()
+            }
+            for region in regions {
+                region.save()
+            }
         } catch {
             // An error occurred saving the world
             server.logError("An error occurred saving local world: \(name)")
@@ -337,6 +344,11 @@ public class LocalWorld: WorldProtocol {
         futureResult.whenFailure { _ in
             completionHandler(nil)
         }
+    }
+    
+    public func saveChunk(chunk: WorldChunk) {
+        // Save chunk in region file
+        getRegion(x: chunk.x >> 5, z: chunk.z >> 5).saveChunk(chunk: chunk, x: chunk.x & (WorldRegion.region_size - 1), z: chunk.z & (WorldRegion.region_size - 1))
     }
     
     public func getGenerator() -> WorldGenerator {

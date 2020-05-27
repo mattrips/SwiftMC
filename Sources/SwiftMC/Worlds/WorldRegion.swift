@@ -94,7 +94,7 @@ class WorldRegion {
         // Setup available sector map
         buffer.moveReaderIndex(to: 0)
         let totalSectors = Int(ceil(Double(buffer.readableBytes) / Double(WorldRegion.sector_bytes)))
-        self.sectorsUsed = [Bool](repeating: false, count: totalSectors + 1)
+        self.sectorsUsed = [Bool](repeating: false, count: totalSectors)
         self.sectorsUsed[0] = true
         self.sectorsUsed[1] = true
         
@@ -108,7 +108,11 @@ class WorldRegion {
             
             if offset != 0 && startSector >= 0 && startSector + numSectors <= totalSectors {
                 for j in startSector ... startSector + numSectors {
-                    sectorsUsed[Int(j)] = true
+                    if j < sectorsUsed.count {
+                        sectorsUsed[Int(j)] = true
+                    } else {
+                        sectorsUsed.append(true)
+                    }
                 }
             }
         }
@@ -197,6 +201,9 @@ class WorldRegion {
             
             // If data exists from NBT
             if let level = level, (level["xPos"] as? NBTInt)?.value == chunk.x, (level["zPos"] as? NBTInt)?.value == chunk.z {
+                // Load properties
+                // TODO: LastUpdate, InhabitedTime, TerrainPopulated
+                
                 // Load the sections
                 if let sections = level["Sections"] as? NBTList {
                     for section in sections.values {
@@ -206,17 +213,22 @@ class WorldRegion {
                     }
                 }
                 
-                // Read biomes
+                // Read biomes and heightmap
                 if let biomes = level["Biomes"] as? NBTByteArray {
                     chunk.biomes = biomes.values
                 }
+                // TODO: Heightmap
+                
+                // Read slime chunk
+                // TODO
             } else {
                 // Generate a new chunk
                 let random = Random(seed: self.world.config.randomSeed)
                 let generator = self.world.getGenerator()
                 
-                // Biomes
+                // Biomes and heightmap
                 chunk.biomes = generator.generateBiomes(world: self.world, random: random, chunkX: chunk.x, chunkZ: chunk.z)
+                // TODO: Heightmap
                 
                 // Chunk data
                 let chunkData = generator.generateChunkData(world: self.world, random: random, chunkX: chunk.x, chunkZ: chunk.z, biomes: chunk.biomes)
@@ -242,8 +254,149 @@ class WorldRegion {
         return promise.futureResult
     }
     
+    // Get a chunk synchronously
     public func getChunk(x: Int32, z: Int32) -> WorldChunk? {
         return try? loadChunk(x: x, z: z).wait()
+    }
+    
+    // Write a NBT to file
+    private func writeChunkBuffer(x: Int32, z: Int32, tag: NBTCompound) throws {
+        // Create a buffer
+        var buffer = ByteBufferAllocator().buffer(capacity: 1024*1024)
+        
+        // Write the NBT tag
+        buffer.writeNBT(tag: tag)
+        
+        // Compress with zlib (defalte)
+        buffer = try buffer.compress(with: .deflate)
+        
+        // Get offset and sector information
+        let offset = getOffset(x: x, z: z)
+        var sectorNumber = offset >> 8
+        let sectorsAllocated = offset & 0xFF
+        let sectorsNeeded = (buffer.readableBytes + WorldRegion.chunk_header_size) / WorldRegion.sector_bytes + 1
+        
+        // Max size if 1 MB
+        if sectorsNeeded >= 256 {
+            return
+        }
+        
+        // Check if we already have a sector
+        if sectorNumber != 0 && sectorsAllocated == sectorsNeeded {
+            // Overwrite old sector
+            write(sector: sectorNumber, buffer: &buffer)
+        } else {
+            // Clear previous sector
+            if sectorNumber != 0 {
+                for j in sectorNumber ... sectorNumber + sectorsAllocated {
+                    sectorsUsed[Int(j)] = false
+                }
+            }
+            
+            // Find free space to store this chunk
+            sectorNumber = findNewSectorStart(for: sectorsNeeded)
+            if sectorNumber == -1 {
+                // Grow the file (because no free space)
+                self.buffer.moveReaderIndex(to: 0)
+                self.buffer.moveWriterIndex(to: self.buffer.readableBytes)
+                self.buffer.writeBytes([UInt8](repeating: 0, count: WorldRegion.sector_bytes * sectorsNeeded))
+                
+                // And update sector number
+                sectorNumber = Int32(sectorsUsed.count)
+            }
+            
+            // Update used sectors
+            for j in sectorNumber ... sectorNumber + Int32(sectorsNeeded) {
+                if j < sectorsUsed.count {
+                    sectorsUsed[Int(j)] = true
+                } else {
+                    sectorsUsed.append(true)
+                }
+            }
+            
+            // Write the sectors
+            write(sector: sectorNumber, buffer: &buffer)
+            
+            // Update offset and timestamp
+            setOffset(x: x, z: z, offset: sectorNumber << 8 | Int32(sectorsNeeded))
+            setTimestamp(x: x, z: z, value: Int32(Date().timeIntervalSince1970))
+        }
+    }
+    
+    // Convert a chunk to a NBT and save it
+    public func saveChunk(chunk: WorldChunk, x: Int32, z: Int32) {
+        // Create a tag
+        let level_tag = NBTCompound(name: "Level")
+        
+        // Save properties
+        level_tag.put(NBTInt(name: "xPos", value: chunk.x))
+        level_tag.put(NBTInt(name: "zPos", value: chunk.z))
+        level_tag.put(NBTLong(name: "LastUpdate", value: 0))
+        //level_tag.put(NBTLong(name: "InhabitedTime", value: chunk.inhabitedTime))
+        //level_tag.put(NBTByte(name: "TerrainPopulated", value: chunk.terrainPopulated ? 1 : 0))
+        
+        // Save sections
+        let list = NBTList(name: "Sections")
+        let maxY = (chunk.sections.map({ $0.key }).max() ?? 0) + 1
+        for y in 0 ..< maxY {
+            if let section = chunk.sections[y] {
+                let section_tag = NBTCompound()
+                section_tag.put(NBTByte(name: "Y", value: y))
+                section.optimize()
+                section.save(to: section_tag)
+                list.values.append(section_tag)
+            }
+        }
+        
+        // Save heightmap and biomes
+        //level_tag.put(NBTIntArray(name: "HeightMap", values: chunk.heightmap))
+        level_tag.put(NBTByteArray(name: "Biomes", values: chunk.biomes))
+        
+        // Save slime chunk
+        //level_tag.put(NBTByte(name: "isSlimeChunk", value: chunk.slimeChunk ? 1 : 0))
+        
+        // And write to file
+        try? writeChunkBuffer(x: x, z: z, tag: NBTCompound(name: nil, values: [level_tag]))
+    }
+    
+    // Find a new sector
+    private func findNewSectorStart(for sectorsNeeded: Int) -> Int32 {
+        // Init variables
+        var start = -1
+        var runLength = 0
+        var i = sectorsUsed.firstIndex(where: { $0 == false }) ?? sectorsUsed.count
+        
+        // Iterate sectors
+        while i < sectorsUsed.count {
+            // Check if sector is used
+            if sectorsUsed[i] {
+                // Reset
+                start = -1
+                runLength = 0
+            } else {
+                if start == -1 {
+                    start = i
+                }
+                runLength += 1
+                if runLength >= sectorsNeeded {
+                    return Int32(start)
+                }
+            }
+            
+            // Increment i (next sector)
+            i += 1
+        }
+        
+        // End of file
+        return -1
+    }
+    
+    // Write data to a sector
+    private func write(sector: Int32, buffer: inout ByteBuffer) {
+        let index = Int(sector) * WorldRegion.sector_bytes
+        self.buffer.setInteger(Int32(buffer.readableBytes + 1), at: index)
+        self.buffer.setInteger(WorldRegion.version_deflate, at: index + 1)
+        self.buffer.setBuffer(buffer, at: index + 2)
     }
 
 }

@@ -88,7 +88,13 @@ public class SwiftMC: CommandSender {
         }
         
         // Start a timer for background tasks
-        eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(1), delay: TimeAmount.seconds(1)) { _ in
+        eventLoopGroup.next().scheduleRepeatedTask(initialDelay: TimeAmount.seconds(1), delay: TimeAmount.seconds(1)) { task in
+            // Check if the server stopped
+            if !self.running {
+                task.cancel()
+                return
+            }
+            
             // Increment time
             self.startTime += 1
             

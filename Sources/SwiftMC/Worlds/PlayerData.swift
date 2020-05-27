@@ -79,8 +79,15 @@ public class PlayerData {
         self.uuid = uuid
         self.world = world
         
+        // Check if the world folder exists
+        let folder = world.path.appendingPathComponent("playerdata")
+        if !FileManager.default.fileExists(atPath: folder.path) {
+            // Create a folder
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true, attributes: nil)
+        }
+        
         // Check if the configuration exists
-        let file = world.path.appendingPathComponent("playerdata").appendingPathComponent("\(uuid).dat")
+        let file = folder.appendingPathComponent("\(uuid).dat")
         if FileManager.default.fileExists(atPath: file.path), let content = FileManager.default.contents(atPath: file.path) {
             // Try to load configuration
             var buffer: ByteBuffer? = ByteBufferAllocator().buffer(capacity: content.count)

@@ -53,7 +53,7 @@ public class NBTCompound: NBTTag {
     }
     
     public func contentSize() -> Int {
-        return values.map({ $0.fullSize() }).reduce(0, { $0 + $1 }) + 1
+        return values.map({ $0.fullSize() }).reduce(1, { $0 + $1 })
     }
     
     public subscript(name: String) -> NBTTag? {
