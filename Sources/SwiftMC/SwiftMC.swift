@@ -25,6 +25,7 @@ public class SwiftMC: CommandSender {
     
     // Publics vars
     public let configuration: Configuration
+    public let logger: (ChatMessage) -> ()
     public let serverRoot: URL
     public let port: Int
     public let mode: AuthentificationMode
@@ -49,11 +50,12 @@ public class SwiftMC: CommandSender {
     public internal(set) var startTime: Int64 = 0
 
     // Initializer
-    public init(configuration: Configuration) {
-        self.serverRoot = URL(fileURLWithPath: configuration.serverRoot, isDirectory: true)
+    public init(serverRoot: String = FileManager.default.currentDirectoryPath, logger: @escaping (ChatMessage) -> () = { print($0.toString(useAnsi: true)) }) {
+        self.serverRoot = URL(fileURLWithPath: serverRoot, isDirectory: true)
+        self.configuration = Configuration(serverRoot: self.serverRoot)
+        self.logger = logger
         self.port = configuration.port
         self.mode = configuration.mode
-        self.configuration = configuration
         self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
         self.commands = [:]
         self.listeners = []
@@ -83,6 +85,18 @@ public class SwiftMC: CommandSender {
         
         // Load worlds
         log("Loading worlds...")
+        
+        // Add local worlds
+        for localWorld in configuration.localWorlds {
+            registerLocalWorld(name: localWorld["name"] as? String ?? "world", generator: localWorld["generator"] as? String ?? "overworld")
+        }
+        
+        // Add remote worlds
+        for remoteWorld in configuration.remoteWorlds {
+            registerRemoteWorld(host: remoteWorld["host"] as? String ?? "127.0.0.1", port: remoteWorld["port"] as? Int ?? 25565)
+        }
+        
+        // And load all of them
         worlds.forEach { world in
             world.load()
         }
@@ -215,7 +229,7 @@ public class SwiftMC: CommandSender {
     // Log
     public func log(_ message: ChatMessage) {
         // Allow custom log channels (like remote access)
-        configuration.logger(ChatMessage(extra: [
+        logger(ChatMessage(extra: [
             ChatMessage(text: "[\(getCurrentTime())] "),
             message,
             ChatMessage(text: "")
@@ -254,7 +268,7 @@ public class SwiftMC: CommandSender {
                 online: players.count,
                 sample: []
             ),
-            description: ChatMessage(text: configuration.motd ?? "A SwiftMC server"),
+            description: ChatMessage(text: configuration.motd),
             favicon: configuration.favicon
         )
     }
@@ -336,16 +350,20 @@ public class SwiftMC: CommandSender {
     
     // Register a local world
     public func registerLocalWorld(name: String, generator: String = "overworld") {
-        let world = LocalWorld(server: self, name: name, generator: getWorldGenerator(name: generator))
-        worlds.append(world)
-        log("Registered local world \(world.getName()) with generator \(world.generator.getName())")
+        if !worlds.contains(where: { $0.getName() == name }) {
+            let world = LocalWorld(server: self, name: name, generator: getWorldGenerator(name: generator))
+            worlds.append(world)
+            log("Registered local world \(world.getName()) with generator \(world.generator.getName())")
+        }
     }
     
     // Register a remote world
     public func registerRemoteWorld(host: String, port: Int) {
-        let world = RemoteWorld(server: self, host: host, port: port)
-        worlds.append(world)
-        log("Registered remote world \(world.getName())")
+        if !worlds.contains(where: { $0.getName() == "\(host):\(port)" }) {
+            let world = RemoteWorld(server: self, host: host, port: port)
+            worlds.append(world)
+            log("Registered remote world \(world.getName())")
+        }
     }
     
     // Register a world generaror

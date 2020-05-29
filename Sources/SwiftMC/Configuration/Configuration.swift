@@ -19,66 +19,115 @@
 
 import Foundation
 
-open class Configuration {
+public class Configuration {
     
-    public var serverRoot: String
-    public var protocolVersion: Int32
-    public var port: Int
-    public var mode: AuthentificationMode = .online
-    public var motd: String?
-    public var favicon: String?
-    public var slots: Int = 42
-    public var viewDistance: Int32 = 16
-    public var debug: Bool = false
-    public var logger: (ChatMessage) -> ()
+    public let protocolVersion: Int32
+    public let port: Int
+    public let slots: Int
+    public let viewDistance: Int32
+    public let mode: AuthentificationMode
+    public let motd: String
+    public let localWorlds: [[String: Any]]
+    public let remoteWorlds: [[String: Any]]
+    public let bstats: Bool
+    public let debug: Bool
+    public let favicon: String? = nil
     
-    public init(protocolVersion: Int32, port: Int) {
-        self.serverRoot = FileManager.default.currentDirectoryPath
-        self.protocolVersion = protocolVersion
-        self.port = port
-        self.logger = { log in
-            print(log.toString(useAnsi: true))
+    internal init(serverRoot: URL) {
+        // Check if the server folder exists
+        if !FileManager.default.fileExists(atPath: serverRoot.path) {
+            // Create a folder
+            try? FileManager.default.createDirectory(at: serverRoot, withIntermediateDirectories: true, attributes: nil)
         }
-    }
-    
-    public func with(serverRoot: String) -> Configuration {
-        self.serverRoot = serverRoot
-        return self
-    }
-    
-    public func with(mode: AuthentificationMode) -> Configuration {
-        self.mode = mode
-        return self
-    }
-    
-    public func with(motd: String) -> Configuration {
-        self.motd = motd
-        return self
-    }
-    
-    public func with(favicon: String) -> Configuration {
-        self.favicon = favicon
-        return self
-    }
-    
-    public func with(slots: Int) -> Configuration {
-        self.slots = slots
-        return self
-    }
-    
-    public func with(viewDistance: Int32) -> Configuration {
-        self.viewDistance = viewDistance
-        return self
-    }
-    
-    public func with(logger: @escaping (ChatMessage) -> ()) -> Configuration {
-        self.logger = logger
-        return self
-    }
-    
-    public func enable(debug: Bool) -> Configuration {
-        self.debug = debug
-        return self
+        
+        // Get the content of the configuration file if exists
+        let file = serverRoot.appendingPathComponent("swiftmc.json")
+        var content = (try? JSONSerialization.jsonObject(with: FileManager.default.contents(atPath: file.path) ?? Data(), options: []) as? [String: Any]) ?? [:]
+        
+        // Protocol version
+        if let protocolVersion = content["protocol-version"] as? Int {
+            self.protocolVersion = Int32(protocolVersion)
+        } else {
+            self.protocolVersion = ProtocolConstants.supported_versions_ids.last ?? 0
+            content["protocol-version"] = Int(protocolVersion)
+        }
+        
+        // Port
+        if let port = content["port"] as? Int {
+            self.port = port
+        } else {
+            self.port = 25565
+            content["port"] = port
+        }
+        
+        // Slots
+        if let slots = content["slots"] as? Int {
+            self.slots = slots
+        } else {
+            self.slots = 42
+            content["slots"] = slots
+        }
+        
+        // View distance
+        if let viewDistance = content["view-distance"] as? Int {
+            self.viewDistance = Int32(viewDistance)
+        } else {
+            self.viewDistance = 16
+            content["view-distance"] = Int(viewDistance)
+        }
+        
+        // Authentification mode
+        if let mode = content["authentification-mode"] as? String {
+            self.mode = mode == "offline" ? .offline : mode == "auto" ? .auto : .online
+        } else {
+            self.mode = .online
+            content["authentification-mode"] = mode == .offline ? "offline" : mode == .auto ? "auto" : "online"
+        }
+        
+        // MOTD
+        if let motd = content["motd"] as? String {
+            self.motd = motd
+        } else {
+            self.motd = "A SwiftMC Server"
+            content["motd"] = motd
+        }
+        
+        // bStats
+        if let bstats = content["enable-bstats"] as? Bool {
+            self.bstats = bstats
+        } else {
+            self.bstats = true
+            content["enable-bstats"] = bstats
+        }
+        
+        // Debug
+        if let debug = content["enable-debug"] as? Bool {
+            self.debug = debug
+        } else {
+            self.debug = false
+            content["enable-debug"] = debug
+        }
+        
+        // Local worlds
+        if let localWorlds = content["local-worlds"] as? [[String: Any]] {
+            self.localWorlds = localWorlds
+        } else {
+            self.localWorlds = [["name": "world", "generator": "overworld"]]
+            content["local-worlds"] = localWorlds
+        }
+        
+        // Remote worlds
+        if let remoteWorlds = content["remote-worlds"] as? [[String: Any]] {
+            self.remoteWorlds = remoteWorlds
+        } else {
+            self.remoteWorlds = []
+            content["remote-worlds"] = remoteWorlds
+        }
+        
+        // Save modifications
+        if let json = try? JSONSerialization.data(withJSONObject: content, options: .prettyPrinted) {
+            FileManager.default.createFile(atPath: file.path, contents: json, attributes: nil)
+        }
     }
     
 }

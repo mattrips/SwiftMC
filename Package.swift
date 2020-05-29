@@ -9,18 +9,19 @@ let package = Package(
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(
             name: "SwiftMC",
-            targets: ["SwiftMC"]),
+            targets: ["SwiftMC"]
+        ),
         .executable(
             name: "SwiftMCRun",
-            targets: ["SwiftMCRun"])
+            targets: ["SwiftMCRun"]
+        )
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
         .package(url: "https://github.com/adam-fowler/compress-nio.git", from: "0.0.1"),
         .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.0.0"),
-        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.0.0"),
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "0.0.1")
+        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.0.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -32,15 +33,15 @@ let package = Package(
                 .product(name: "CompressNIO", package: "compress-nio"),
                 .product(name: "AsyncHTTPClient", package: "async-http-client"),
                 .product(name: "CryptoSwift", package: "CryptoSwift")
-            ]),
+            ]
+        ),
         .target(
             name: "SwiftMCRun",
-            dependencies: [
-                "SwiftMC",
-                .product(name: "ArgumentParser", package: "swift-argument-parser")
-            ]),
+            dependencies: ["SwiftMC"]
+        ),
         .testTarget(
             name: "SwiftMCTests",
-            dependencies: ["SwiftMC"]),
+            dependencies: ["SwiftMC"]
+        )
     ]
 )
