@@ -19,7 +19,6 @@
 
 import Foundation
 import NIO
-import CompressNIO
 import AsyncHTTPClient
 
 public class BStatsSubmitData {
