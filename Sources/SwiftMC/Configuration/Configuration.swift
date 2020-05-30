@@ -29,7 +29,7 @@ public class Configuration {
     public let motd: String
     public let localWorlds: [[String: Any]]
     public let remoteWorlds: [[String: Any]]
-    public let bstats: Bool
+    public let bstats: [String: Any]
     public let debug: Bool
     public let favicon: String? = nil
     
@@ -93,11 +93,11 @@ public class Configuration {
         }
         
         // bStats
-        if let bstats = content["enable-bstats"] as? Bool {
+        if let bstats = content["bstats"] as? [String: Any] {
             self.bstats = bstats
         } else {
-            self.bstats = true
-            content["enable-bstats"] = bstats
+            self.bstats = ["enabled": true, "server-uuid": UUID().uuidString.lowercased()]
+            content["bstats"] = bstats
         }
         
         // Debug

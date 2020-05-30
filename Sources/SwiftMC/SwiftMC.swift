@@ -124,6 +124,11 @@ public class SwiftMC: CommandSender {
                 }
             }
             
+            // Send data to bStats
+            if self.startTime % 1800 == 10 && self.configuration.bstats["enabled"] as? Bool ?? true {
+                BStatsSubmitData(server: self).fetch(in: self.eventLoopGroup)
+            }
+            
             // Save worlds
             if self.startTime % 300 == 0 {
                 self.eventLoopGroup.next().execute {
