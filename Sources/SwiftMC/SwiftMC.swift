@@ -385,6 +385,11 @@ public class SwiftMC: CommandSender {
     // Dispatch a command
     @discardableResult
     public func dispatchCommand(sender: CommandSender, command: String, showError: Bool = true) -> Bool {
+        // Don't execute if server is not ready
+        if !ready {
+            return false
+        }
+        
         // Log
         log("\(sender.getName()) executed command /\(command)")
         

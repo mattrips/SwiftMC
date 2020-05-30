@@ -38,13 +38,13 @@ class WorldRegion {
     // Caching
     private var offsets: [Int32]
     private var chunkTimestamps: [Int32]
-    private var buffer: ByteBuffer
+    private var fileHandle: FileHandle
     private var lastModified: Double
     private var sectorsUsed: [Bool]
     private var sizeDelta: Int
     
     // Initializer
-    public init(world: LocalWorld, x: Int32, z: Int32) {
+    public init(world: LocalWorld, x: Int32, z: Int32) throws {
         // Region informations
         self.world = world
         self.x = x
@@ -62,45 +62,41 @@ class WorldRegion {
         
         // Get the content of the file if exists
         let file = folder.appendingPathComponent("r.\(x).\(z).mca")
-        let content = FileManager.default.contents(atPath: file.path) ?? Data()
-        self.buffer = ByteBufferAllocator().buffer(capacity: content.count)
-        self.buffer.writeBytes(content)
+        self.fileHandle = try FileHandle(forUpdating: file)
         self.lastModified = (try? FileManager.default.attributesOfItem(atPath: file.path)[.modificationDate] as? NSDate)?.timeIntervalSince1970 ?? 0
-        let initialLength = content.count
+        let initialLength = fileHandle.seekToEndOfFile()
         
         // Grow the file if it is not big enough (less than 8K)
         if lastModified == 0 || initialLength < 4096 {
             // New file or files under 4K
             sizeDelta = 2 * WorldRegion.sector_bytes
-            buffer.moveWriterIndex(to: 0)
-            buffer.reserveCapacity(sizeDelta)
-            buffer.writeBytes([UInt8](repeating: 0, count: sizeDelta))
+            fileHandle.seek(to: 0)
+            fileHandle.write(Data(repeating: 0, count: sizeDelta))
         } else {
             // Grow again if needed
-            buffer.moveWriterIndex(to: initialLength)
+            fileHandle.seekToEndOfFile()
             if initialLength < 2 * WorldRegion.sector_bytes {
                 // Still under 8K
-                sizeDelta = 2 * WorldRegion.sector_bytes - initialLength
-                buffer.reserveCapacity(sizeDelta)
-                buffer.writeBytes([UInt8](repeating: 0, count: sizeDelta))
-            } else if (initialLength & (WorldRegion.sector_bytes - 1)) != 0 {
+                sizeDelta = 2 * WorldRegion.sector_bytes - Int(initialLength)
+                fileHandle.write(Data(repeating: 0, count: sizeDelta))
+            } else if (initialLength & UInt64(WorldRegion.sector_bytes - 1)) != 0 {
                 // Not a multiple of 4K, grow it
-                sizeDelta = initialLength & (WorldRegion.sector_bytes - 1)
-                buffer.reserveCapacity(sizeDelta)
-                buffer.writeBytes([UInt8](repeating: 0, count: sizeDelta))
+                sizeDelta = Int(initialLength) & (WorldRegion.sector_bytes - 1)
+                fileHandle.write(Data(repeating: 0, count: sizeDelta))
             }
         }
         
         // Setup available sector map
-        buffer.moveReaderIndex(to: 0)
-        let totalSectors = Int(ceil(Double(buffer.readableBytes) / Double(WorldRegion.sector_bytes)))
+        fileHandle.seek(to: 0)
+        let totalSectors = Int(ceil(Double(fileHandle.seekToEndOfFile()) / Double(WorldRegion.sector_bytes)))
         self.sectorsUsed = [Bool](repeating: false, count: totalSectors)
         self.sectorsUsed[0] = true
         self.sectorsUsed[1] = true
         
         // Read offset table and timestamp tables
+        fileHandle.seek(to: 0)
         for i in 0 ..< WorldRegion.sector_ints {
-            let offset = buffer.readInteger(as: Int32.self) ?? 0
+            let offset = fileHandle.readData(ofLength: 4).to(type: Int32.self) ?? 0
             offsets[i] = offset
             
             let startSector = offset >> 8
@@ -117,7 +113,7 @@ class WorldRegion {
             }
         }
         for i in 0 ..< WorldRegion.sector_ints {
-            chunkTimestamps[i] = buffer.readInteger(as: Int32.self) ?? 0
+            chunkTimestamps[i] = fileHandle.readData(ofLength: 4).to(type: Int32.self) ?? 0
         }
     }
     
@@ -129,26 +125,15 @@ class WorldRegion {
     // Set offset
     private func setOffset(x: Int32, z: Int32, offset: Int32) {
         offsets[Int(x + (z << 5))] = offset
-        buffer.moveWriterIndex(to: Int(x + (z << 5)) << 2)
-        buffer.writeInteger(offset, as: Int32.self)
+        fileHandle.seek(to: UInt64(x + (z << 5)) << 2)
+        fileHandle.write(Data(from: offset))
     }
     
     // Set timestamp
     private func setTimestamp(x: Int32, z: Int32, value: Int32) {
         chunkTimestamps[Int(x + (z << 5))] = value
-        buffer.moveWriterIndex(to: WorldRegion.sector_bytes + Int(x + (z << 5)) << 2)
-        buffer.writeInteger(value, as: Int32.self)
-    }
-    
-    // Save to file
-    public func save() {
-        // Get content
-        buffer.moveReaderIndex(to: 0)
-        let content = Data(buffer.readBytes(length: buffer.readableBytes) ?? [])
-        
-        // Save to disk
-        let file = world.path.appendingPathComponent("region").appendingPathComponent("r.\(x).\(z).mca")
-        FileManager.default.createFile(atPath: file.path, contents: content, attributes: nil)
+        fileHandle.seek(to: UInt64(WorldRegion.sector_bytes + Int(x + (z << 5)) << 2))
+        fileHandle.write(Data(from: value))
     }
     
     // Get buffer to read chunk
@@ -164,14 +149,14 @@ class WorldRegion {
         if sectorNumber + numSectors > totalSectors { return nil }
         
         // Read sectors
-        self.buffer.moveReaderIndex(to: Int(sectorNumber) * WorldRegion.sector_bytes)
-        let length = Int(buffer.readInteger(as: Int32.self) ?? 0)
+        self.fileHandle.seek(to: UInt64(Int(sectorNumber) * WorldRegion.sector_bytes))
+        let length = Int(fileHandle.readData(ofLength: 4).to(type: Int32.self) ?? 0)
         if length > WorldRegion.sector_bytes * Int(numSectors) || length <= 0 { return nil }
         
         // Read compression information
-        let version = buffer.readInteger(as: Int8.self)
+        let version = fileHandle.readData(ofLength: 1).to(type: Int8.self)
         var data = ByteBufferAllocator().buffer(capacity: length - 1)
-        data.writeBytes(buffer.readBytes(length: length - 1) ?? [])
+        data.writeBytes([UInt8](fileHandle.readData(ofLength: length - 1)))
         if version == WorldRegion.version_gzip {
             data = try data.decompress(with: .gzip)
         } else if version == WorldRegion.version_deflate {
@@ -298,9 +283,8 @@ class WorldRegion {
             sectorNumber = findNewSectorStart(for: sectorsNeeded)
             if sectorNumber == -1 {
                 // Grow the file (because no free space)
-                self.buffer.moveReaderIndex(to: 0)
-                self.buffer.moveWriterIndex(to: self.buffer.readableBytes)
-                self.buffer.writeBytes([UInt8](repeating: 0, count: WorldRegion.sector_bytes * sectorsNeeded))
+                fileHandle.seekToEndOfFile()
+                fileHandle.write(Data(repeating: 0, count: WorldRegion.sector_bytes * sectorsNeeded))
                 
                 // And update sector number
                 sectorNumber = Int32(sectorsUsed.count)
@@ -348,6 +332,7 @@ class WorldRegion {
                 list.values.append(section_tag)
             }
         }
+        level_tag.put(list)
         
         // Save heightmap and biomes
         //level_tag.put(NBTIntArray(name: "HeightMap", values: chunk.heightmap))
@@ -394,10 +379,10 @@ class WorldRegion {
     
     // Write data to a sector
     private func write(sector: Int32, buffer: inout ByteBuffer) {
-        let index = Int(sector) * WorldRegion.sector_bytes
-        self.buffer.setInteger(Int32(buffer.readableBytes + 1), at: index)
-        self.buffer.setInteger(WorldRegion.version_deflate, at: index + 1)
-        self.buffer.setBuffer(buffer, at: index + 2)
+        fileHandle.seek(to: UInt64(Int(sector) * WorldRegion.sector_bytes))
+        fileHandle.write(Data(from: Int32(buffer.readableBytes + 1)))
+        fileHandle.write(Data(from: WorldRegion.version_deflate))
+        fileHandle.write(Data(buffer: buffer))
     }
 
 }

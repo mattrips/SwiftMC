@@ -180,7 +180,7 @@ class WorldChunkSection {
         let data = NibbleArray(size: WorldChunkSection.array_size)
         for i in 0 ..< types.count {
             let type = types[i]
-            rawTypes.append(Int8(type >> 4 & 0xFF))
+            rawTypes.append(Int8(bitPattern: UInt8(type >> 4 & 0xFF)))
             data[i] = Int8(type & 0xF)
         }
         tag.put(NBTByteArray(name: "Blocks", values: rawTypes))

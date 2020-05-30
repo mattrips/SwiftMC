@@ -53,7 +53,7 @@ public class MojangHasJoined {
             case.failure(_):
                 completionHandler(nil)
             case .success(let response):
-                if response.status == .ok, var body = response.body, let bytes = body.readBytes(length: body.readableBytes), let json = try?JSONSerialization.jsonObject(with: Data(bytes), options: []) as? [String: Any] {
+                if response.status == .ok, let body = response.body, let json = try?JSONSerialization.jsonObject(with: Data(buffer: body), options: []) as? [String: Any] {
                     completionHandler(json)
                 } else {
                     completionHandler(nil)

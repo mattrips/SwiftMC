@@ -60,4 +60,15 @@ extension Data {
         return result
     }
     
+    init<T>(from value: T) where T: FixedWidthInteger {
+        self = Swift.withUnsafeBytes(of: value.bigEndian) { Data($0) }
+    }
+
+    func to<T>(type: T.Type) -> T? where T: FixedWidthInteger {
+        var value: T = 0
+        guard count >= MemoryLayout.size(ofValue: value) else { return nil }
+        _ = Swift.withUnsafeMutableBytes(of: &value, { copyBytes(to: $0)} )
+        return value.bigEndian
+    }
+    
 }

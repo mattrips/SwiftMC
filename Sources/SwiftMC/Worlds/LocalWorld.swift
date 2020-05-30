@@ -291,23 +291,20 @@ public class LocalWorld: WorldProtocol {
                 saveChunk(chunk: chunk)
                 progressBar.increment()
             }
-            for region in regions {
-                region.save()
-            }
         } catch {
             // An error occurred saving the world
             server.logError("An error occurred saving local world: \(name)")
         }
     }
     
-    internal func getRegion(x: Int32, z: Int32) -> WorldRegion {
+    internal func getRegion(x: Int32, z: Int32) throws -> WorldRegion {
         // Return existing region if exists
         if let region = regions.first(where: { $0.x == x && $0.z == z }) {
             return region
         }
         
         // Init a new region
-        let region = WorldRegion(world: self, x: x, z: z)
+        let region = try WorldRegion(world: self, x: x, z: z)
         regions.append(region)
         return region
     }
@@ -319,7 +316,7 @@ public class LocalWorld: WorldProtocol {
         }
         
         // Retrieve from a region
-        if let chunk = getRegion(x: x >> 5, z: z >> 5).getChunk(x: x & (WorldRegion.region_size - 1), z: z & (WorldRegion.region_size - 1)) {
+        if let chunk = try? getRegion(x: x >> 5, z: z >> 5).getChunk(x: x & (WorldRegion.region_size - 1), z: z & (WorldRegion.region_size - 1)) {
             chunks.append(chunk)
             return chunk
         }
@@ -336,12 +333,15 @@ public class LocalWorld: WorldProtocol {
         }
         
         // Retrieve from a region
-        let futureResult = getRegion(x: x >> 5, z: z >> 5).loadChunk(x: x & (WorldRegion.region_size - 1), z: z & (WorldRegion.region_size - 1))
-        futureResult.whenSuccess({ chunk in
-            self.chunks.append(chunk)
-            completionHandler(chunk)
-        })
-        futureResult.whenFailure { _ in
+        if let futureResult = try? getRegion(x: x >> 5, z: z >> 5).loadChunk(x: x & (WorldRegion.region_size - 1), z: z & (WorldRegion.region_size - 1)) {
+            futureResult.whenSuccess({ chunk in
+                self.chunks.append(chunk)
+                completionHandler(chunk)
+            })
+            futureResult.whenFailure { _ in
+                completionHandler(nil)
+            }
+        } else {
             completionHandler(nil)
         }
     }
@@ -350,7 +350,7 @@ public class LocalWorld: WorldProtocol {
         // Check that chunk is loaded
         if chunk.loaded {
             // Save chunk in region file
-            getRegion(x: chunk.x >> 5, z: chunk.z >> 5).saveChunk(chunk: chunk, x: chunk.x & (WorldRegion.region_size - 1), z: chunk.z & (WorldRegion.region_size - 1))
+            try? getRegion(x: chunk.x >> 5, z: chunk.z >> 5).saveChunk(chunk: chunk, x: chunk.x & (WorldRegion.region_size - 1), z: chunk.z & (WorldRegion.region_size - 1))
         }
     }
     

@@ -86,7 +86,7 @@ class MinecraftEncoder: MessageToByteEncoder {
     func encryptionEncoder(from: inout ByteBuffer, out: inout ByteBuffer) throws {
         if from.readableBytes > 0 {
             // AES(key: sharedKey, blockMode: CFB(iv: iv), padding: .noPadding).encrypt(bytes)
-            if let sharedKey = channel?.sharedKey, let bytes = from.readBytes(length: from.readableBytes), let encrypted = EncryptionManager.crypt(CCOperation(kCCEncrypt), data: Data(bytes), key: Data(sharedKey), iv: Data(iv)) {
+            if let sharedKey = channel?.sharedKey, let encrypted = EncryptionManager.crypt(CCOperation(kCCEncrypt), data: Data(buffer: from), key: Data(sharedKey), iv: Data(iv)) {
                 // Encrypt data with given key
                 out.writeBytes([UInt8](encrypted))
                 
