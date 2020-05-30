@@ -62,6 +62,9 @@ class WorldRegion {
         
         // Get the content of the file if exists
         let file = folder.appendingPathComponent("r.\(x).\(z).mca")
+        if !FileManager.default.fileExists(atPath: file.path) {
+            FileManager.default.createFile(atPath: file.path, contents: nil, attributes: nil)
+        }
         self.fileHandle = try FileHandle(forUpdating: file)
         self.lastModified = (try? FileManager.default.attributesOfItem(atPath: file.path)[.modificationDate] as? NSDate)?.timeIntervalSince1970 ?? 0
         let initialLength = fileHandle.seekToEndOfFile()
