@@ -18,25 +18,9 @@
 */
 
 import Foundation
-import CommonCrypto
+import CryptoSwift
 
 extension String {
-
-    public func md5() -> String? {
-        let length = Int(CC_MD5_DIGEST_LENGTH)
-        var digest = [UInt8](repeating: 0, count: length)
-
-        if let d = self.data(using: .utf8) {
-            _ = d.withUnsafeBytes { body -> String in
-                CC_MD5(body.baseAddress, CC_LONG(d.count), &digest)
-                return ""
-            }
-        }
-
-        return (0 ..< length).reduce("") {
-            $0 + String(format: "%02x", digest[$1])
-        }
-    }
 
     public func hex2bin() -> [UInt8] {
         var hex = self
@@ -49,8 +33,8 @@ extension String {
     }
 
     public func getUUID() -> String? {
-        if let hash = "OfflinePlayer:\(self)".md5() {
-            var bytes = hash.hex2bin()
+        if let data = "OfflinePlayer:\(self)".data(using: .utf8) {
+            var bytes = [UInt8](data.md5())
             bytes[6] = bytes[6] & 0x0F | 0x30
             bytes[8] = bytes[8] & 0x3F | 0x80
             return Data(bytes).bin2hex().addSeparatorUUID()

@@ -18,9 +18,10 @@
 */
 
 import Foundation
-import Security
-import CommonCrypto
 import CryptoSwift
+#if !os(Linux)
+import CommonCrypto
+#endif
 
 class EncryptionManager {
     
@@ -49,9 +50,11 @@ class EncryptionManager {
     
     // Check if encryption is supported
     static func supportsEncryption() -> Bool {
+        #if !os(Linux)
         if #available(iOS 10.0, tvOS 10.0, macOS 10.12, watchOS 3.0, *) {
             return keys != nil
         }
+        #endif
         return false
     }
     
@@ -170,11 +173,17 @@ class EncryptionManager {
     
     // TEMP CODE UNTIL CRYPTOSWIFT ADDS SUPPORT FOR CFB8:
     
-    public static func crypt(_ opMode: CCMode, data: Data, key: Data, iv: Data) -> Data? {
+    public enum Mode {
+        case encrypt, decrypt
+    }
+    
+    #if !os(Linux)
+    public static func crypt(_ opMode: EncryptionManager.Mode, data: Data, key: Data, iv: Data) -> Data? {
         var cryptor: CCCryptorRef?
         var status = withUnsafePointers(iv, key, { ivBytes, keyBytes in
             return CCCryptorCreateWithMode(
-                opMode, CCMode(kCCModeCFB8),
+                CCOperation(opMode == .encrypt ? kCCEncrypt : kCCDecrypt),
+                CCMode(kCCModeCFB8),
                 CCAlgorithm(kCCAlgorithmAES), 0,
                 ivBytes, keyBytes, key.count,
                 nil, 0, 0,
@@ -238,5 +247,10 @@ class EncryptionManager {
             }
         }
     }
+    #else
+    public static func crypt(_ opMode: EncryptionManager.Mode, data: Data, key: Data, iv: Data) -> Data? {
+        return nil
+    }
+    #endif
     
 }
