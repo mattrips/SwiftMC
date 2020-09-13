@@ -66,7 +66,9 @@ public class MojangJoin {
                     completionHandler(false)
                 }
             }
-            try? client.syncShutdown()
+            DispatchQueue.main.sync {
+                try? client.syncShutdown()
+            }
         }
     }
     

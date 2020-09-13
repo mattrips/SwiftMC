@@ -59,7 +59,9 @@ public class MojangHasJoined {
                     completionHandler(nil)
                 }
             }
-            try? client.syncShutdown()
+            DispatchQueue.main.sync {
+                try? client.syncShutdown()
+            }
         }
     }
     
