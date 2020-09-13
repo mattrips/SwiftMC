@@ -82,10 +82,7 @@ public class BStatsSubmitData {
             request.body = .data(body)
             
             client.execute(request: request).whenComplete { _ in
-                DispatchQueue.main.sync {
-                    try? client.syncShutdown()
-                }
-                
+                try? client.syncShutdown()
             }
         }
     }
